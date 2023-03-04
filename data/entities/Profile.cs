@@ -1,4 +1,5 @@
 ﻿using Bakalauras.Auth.Model;
+using Microsoft.Build.Framework;
 
 namespace Bakalauras.data.entities
 {
@@ -12,7 +13,8 @@ namespace Bakalauras.data.entities
         public ICollection<ProfileText> ProfileTexts { get; set; }
 
         public ICollection<DailyQuestionProfile> DailyQuestionProfiles { get; set; }
-
+        [Required]
+        public string UserId { get; set; } 
         public BookieUser User { get; set; }
     }
 }

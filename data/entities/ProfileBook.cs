@@ -1,4 +1,6 @@
-﻿namespace Bakalauras.data.entities
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Bakalauras.data.entities
 {
     public class ProfileBook
     {
