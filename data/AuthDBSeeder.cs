@@ -1,6 +1,6 @@
 ﻿using Bakalauras.Auth.Model;
 using Microsoft.AspNetCore.Identity;
-namespace Bookie.data
+namespace Bakalauras.data
 {
     public class AuthDbSeeder
     {

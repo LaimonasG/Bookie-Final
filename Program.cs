@@ -7,8 +7,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using System.IdentityModel.Tokens.Jwt;
 using Bakalauras.Auth.Model;
-using System.Configuration;
-using Microsoft.EntityFrameworkCore;
+using Bakalauras.data.repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,12 +42,12 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddDbContext<BookieDBContext>();
-//builder.Services.AddTransient<IBookRepository, BookRepository>();
-//builder.Services.AddTransient<IGenreRepository, GenreRepository>();
+builder.Services.AddTransient<IBookRepository, BookRepository>();
+builder.Services.AddTransient<IGenreRepository, GenreRepository>();
 //builder.Services.AddTransient<ICommentRepository, CommentRepository>();
 //builder.Services.AddTransient<IBasketRepository, BasketRepository>();
 builder.Services.AddTransient<IJwtTokenService, JwtTokenService>();
-//builder.Services.AddScoped<AuthDbSeeder>();
+builder.Services.AddScoped<AuthDbSeeder>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -74,6 +73,6 @@ app.MapControllers();
 app.UseAuthentication();
 app.UseAuthorization();
 
-//var dbseeder = app.Services.CreateScope().ServiceProvider.GetRequiredService<AuthDbSeeder>();
-//await dbseeder.SeedAsync();
+var dbseeder = app.Services.CreateScope().ServiceProvider.GetRequiredService<AuthDbSeeder>();
+await dbseeder.SeedAsync();
 app.Run();

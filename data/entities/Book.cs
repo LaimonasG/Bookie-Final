@@ -7,7 +7,7 @@ namespace Bakalauras.data.entities;
 public class Book
 {
     public int Id { get; set; }
-    public int GenreId { get; set; }
+    public string GenreName { get; set; }
     [Required]
     public string UserId { get; set; }
 
