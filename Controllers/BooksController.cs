@@ -55,12 +55,13 @@ namespace Bakalauras.controllers
 
         [HttpPut]
         [Route("{bookId}")]
-        [Authorize(Roles = $"{BookieRoles.BookieUser},{BookieRoles.Admin}")]
+        [Authorize(Roles = BookieRoles.Admin)]
         public async Task<ActionResult<BookDto>> Update(int bookId, string GenreName, UpdateBookDto updateBookDto)
         {
             var book = await bookRepository.GetAsync(bookId, GenreName);
             if (book == null) return NotFound();
             var authRez=await authorizationService.AuthorizeAsync(User, book, PolicyNames.ResourceOwner);
+
             if (!authRez.Succeeded)
             {
                 return Forbid();
@@ -86,38 +87,5 @@ namespace Bakalauras.controllers
             //204
             return NoContent();
         }
-
-        //private IEnumerable<LinkDto> CreateLinksForTopic(int commentId)
-        //{
-        //    yield return new LinkDto { Href = Url.Link("GetBook", new { commentId }), Rel = "self", Method = "GET" };
-        //    yield return new LinkDto { Href = Url.Link("DeleteBook", new { commentId }), Rel = "delete_book", Method = "DELETE" };
-        //}
-
-        //private string? CreateGenresResourceUri(
-        //    BooksSearchParameters commentsSearchParametersDto,
-        //    ResourceUriType type)
-        //{
-        //    return type switch
-        //    {
-        //        ResourceUriType.PreviousPage => Url.Link("GetBooks",
-        //            new
-        //            {
-        //                pageNumber = commentsSearchParametersDto.pageNumber - 1,
-        //                pageSize = commentsSearchParametersDto.PageSize,
-        //            }),
-        //        ResourceUriType.NextPage => Url.Link("GetBooks",
-        //            new
-        //            {
-        //                pageNumber = commentsSearchParametersDto.pageNumber + 1,
-        //                pageSize = commentsSearchParametersDto.PageSize,
-        //            }),
-        //        _ => Url.Link("GetBooks",
-        //            new
-        //            {
-        //                pageNumber = commentsSearchParametersDto.pageNumber,
-        //                pageSize = commentsSearchParametersDto.PageSize,
-        //            })
-        //    };
-        //}
     }
 }

@@ -274,3 +274,16 @@ D:\laimi\Bakalauras\obj\Debug\net6.0\refint\Bakalauras.dll
 D:\laimi\Bakalauras\obj\Debug\net6.0\Bakalauras.pdb
 D:\laimi\Bakalauras\obj\Debug\net6.0\Bakalauras.genruntimeconfig.cache
 D:\laimi\Bakalauras\obj\Debug\net6.0\ref\Bakalauras.dll
+D:\laimi\Bakalauras\bin\Debug\net6.0\itext.barcodes.dll
+D:\laimi\Bakalauras\bin\Debug\net6.0\itext.forms.dll
+D:\laimi\Bakalauras\bin\Debug\net6.0\itext.io.dll
+D:\laimi\Bakalauras\bin\Debug\net6.0\itext.kernel.dll
+D:\laimi\Bakalauras\bin\Debug\net6.0\itext.layout.dll
+D:\laimi\Bakalauras\bin\Debug\net6.0\itext.pdfa.dll
+D:\laimi\Bakalauras\bin\Debug\net6.0\itext.sign.dll
+D:\laimi\Bakalauras\bin\Debug\net6.0\itext.styledxmlparser.dll
+D:\laimi\Bakalauras\bin\Debug\net6.0\itext.svg.dll
+D:\laimi\Bakalauras\bin\Debug\net6.0\itext.commons.dll
+D:\laimi\Bakalauras\bin\Debug\net6.0\Microsoft.DotNet.PlatformAbstractions.dll
+D:\laimi\Bakalauras\bin\Debug\net6.0\Microsoft.Extensions.DependencyModel.dll
+D:\laimi\Bakalauras\bin\Debug\net6.0\BouncyCastle.Crypto.dll

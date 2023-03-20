@@ -44,8 +44,8 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddDbContext<BookieDBContext>();
 builder.Services.AddTransient<IBookRepository, BookRepository>();
 builder.Services.AddTransient<IGenreRepository, GenreRepository>();
-//builder.Services.AddTransient<ICommentRepository, CommentRepository>();
-//builder.Services.AddTransient<IBasketRepository, BasketRepository>();
+builder.Services.AddTransient<ICommentRepository, CommentRepository>();
+builder.Services.AddTransient<IChaptersRepository, ChaptersRepository>();
 builder.Services.AddTransient<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<AuthDbSeeder>();
 

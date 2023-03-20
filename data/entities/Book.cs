@@ -1,10 +1,11 @@
-﻿using Bakalauras.Auth.Model;
+﻿using Bakalauras.Auth;
+using Bakalauras.Auth.Model;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 
 namespace Bakalauras.data.entities;
 
-public class Book
+public class Book : IUserOwnedResource
 {
     public int Id { get; set; }
     public string GenreName { get; set; }
