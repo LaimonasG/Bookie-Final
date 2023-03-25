@@ -11,8 +11,9 @@ namespace Bakalauras.data.repositories
         Task<Book?> GetAsync(int bookId, string genreName);
         Task<IReadOnlyList<Book>> GetManyAsync();
 
-        // Task<PagedList<Book>> GetManyAsync(BooksSearchParameters parameters);
         Task UpdateAsync(Book book);
+
+        Task<IReadOnlyList<Book>> GetUserBooksAsync(string userId);
     }
 
     public class BookRepository : IBookRepository

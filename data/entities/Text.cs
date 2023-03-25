@@ -1,13 +1,14 @@
 ﻿using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using Bakalauras.Auth.Model;
+using Bakalauras.Auth;
 
 namespace Bakalauras.data.entities
 {
-    public class Text
+    public class Text: IUserOwnedResource
     {
         public int Id { get; set; }
-        public int GenreId { get; set; }
+        public string GenreName { get; set; }
         [Required]
         public string UserId { get; set; }
 

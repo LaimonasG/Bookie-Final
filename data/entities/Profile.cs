@@ -9,6 +9,8 @@ namespace Bakalauras.data.entities
 
         public double Points { get; set; }
 
+        public byte[]? ProfilePicture { get; set; }
+
         public ICollection<ProfileBook> ProfileBooks { get; set; }
         public ICollection<ProfileText> ProfileTexts { get; set; }
 

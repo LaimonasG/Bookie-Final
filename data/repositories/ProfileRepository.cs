@@ -1,6 +1,9 @@
-﻿using Bakalauras.data.dtos;
+﻿using Bakalauras.Auth.Model;
+using Bakalauras.data.dtos;
 using Bakalauras.data.entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Org.BouncyCastle.Bcpg;
 using PagedList;
 
 namespace Bakalauras.data.repositories
@@ -9,58 +12,58 @@ namespace Bakalauras.data.repositories
     {
         Task CreateAsync(Profile profile);
         Task DeleteAsync(Profile profile);
-        Task<Profile?> GetAsync(int profileId);
+        Task<Profile?> GetAsync(string userId);
         Task<IReadOnlyList<Profile>> GetManyAsync();
-       // Task<PagedList<Profile>> GetManyAsync(ProfileSearchParams parameters);
         Task UpdateAsync(Profile profile);
+        Task UpdatePersonalInfoAsync(PersonalInfoDto dto);
     }
     public class ProfileRepository : IProfileRepository
     {
-        private readonly BookieDBContext bookieDBContext;
-        public ProfileRepository(BookieDBContext context)
+        private readonly BookieDBContext _BookieDBContext;
+        private readonly UserManager<BookieUser> _UserManager;
+        public ProfileRepository(BookieDBContext context,UserManager<BookieUser> mng)
         {
-            bookieDBContext = context;
+            _BookieDBContext = context;
+            _UserManager = mng;
         }
 
-        public async Task<Profile?> GetAsync(int profileId)
+        public async Task<Profile?> GetAsync(string userId)
         {
-            return await bookieDBContext.Profiles.FirstOrDefaultAsync(x => x.Id == profileId);
+            return await _BookieDBContext.Profiles.FirstOrDefaultAsync(x => x.UserId == userId);
         }
 
         public async Task<IReadOnlyList<Profile>> GetManyAsync()
         {
-            return await bookieDBContext.Profiles.ToListAsync();
+            return await _BookieDBContext.Profiles.ToListAsync();
         }
-
-        public async Task<IReadOnlyList<Profile>> GetUserBooksAsync(string userId)
-        {
-            return await bookieDBContext.Profiles.Where(x => x.UserId == userId).ToListAsync();
-        }
-
-        //public async Task<PagedList<Profile>> GetManyAsync(ProfileSearchParams parameters)
-        //{
-        //    var queryable = bookieDBContext.Profile.AsQueryable().OrderBy(o => o.Name);
-
-        //    return await PagedList<Profile>.CreateAsync(queryable, parameters.pageNumber,
-        //        parameters.PageSize);
-        //}
 
         public async Task CreateAsync(Profile profile)
         {
-            bookieDBContext.Profiles.Add(profile);
-            await bookieDBContext.SaveChangesAsync();
+            _BookieDBContext.Profiles.Add(profile);
+            await _BookieDBContext.SaveChangesAsync();
         }
 
         public async Task UpdateAsync(Profile profile)
         {
-            bookieDBContext.Profiles.Update(profile);
-            await bookieDBContext.SaveChangesAsync();
+            _BookieDBContext.Profiles.Update(profile);
+            await _BookieDBContext.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(Profile profile)
         {
-            bookieDBContext.Profiles.Remove(profile);
-            await bookieDBContext.SaveChangesAsync();
+            _BookieDBContext.Profiles.Remove(profile);
+            await _BookieDBContext.SaveChangesAsync();
+        }
+
+        public async Task UpdatePersonalInfoAsync(PersonalInfoDto dto)
+        {
+            var user = await _UserManager.FindByIdAsync(dto.userId);
+
+            if(dto.userName!= null) { user.UserName = dto.userName; }
+            if (dto.email != null) { user.Email = dto.email; }
+
+            _BookieDBContext.Users.Update(user);
+            await _BookieDBContext.SaveChangesAsync();
         }
     }
 }

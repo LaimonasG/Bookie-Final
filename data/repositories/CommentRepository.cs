@@ -28,30 +28,52 @@ namespace Bakalauras.data.repositories
 
         public async Task<Comment?> GetAsync(int cmId, int EntityId, string EntityType)
         {
-            return await _BookieDBContext.Comments.FirstOrDefaultAsync(x => x.Id == cmId && x.Type == EntityType
-            && x.BookId == EntityId);
+            return await _BookieDBContext.Comments.FirstOrDefaultAsync(x => x.Id == cmId && x.EntityType == EntityType
+            && x.EntityId == EntityId);
         }
 
         public async Task<IReadOnlyList<Comment>> GetManyAsync(int EntityId, string EntityType)
         {
-            return await _BookieDBContext.Comments.Where(c => c.BookId == EntityId && c.Type == EntityType).ToListAsync();
+            return await _BookieDBContext.Comments.Where(c => c.EntityId == EntityId && c.EntityType == EntityType).ToListAsync();
         }
 
         public async Task CreateAsync(Comment cm, int EntityId, string EntityType)
         {
             Book? book;
             Text? text;
+            Chapter? chapter;
 
             if (EntityType == "Book") {
                 book = _BookieDBContext.Books.FirstOrDefault(x => x.Id == EntityId);
-                if (book != null) cm.BookId = EntityId;
-                _BookieDBContext.Comments.Add(cm);
+                if (book != null)
+                {
+                    cm.BookId = EntityId;
+                    cm.EntityId = EntityId;
+                    _BookieDBContext.Comments.Add(cm);
+                }
+                
                 await _BookieDBContext.SaveChangesAsync();
             }
             else if (EntityType == "Text") {
                 text = _BookieDBContext.Texts.FirstOrDefault(x => x.Id == EntityId);
-                if (text != null) cm.BookId = EntityId;
-                _BookieDBContext.Comments.Add(cm);
+                if (text != null)
+                {
+                    cm.TextId = EntityId;
+                    cm.EntityId = EntityId;
+                    _BookieDBContext.Comments.Add(cm);
+                }
+                
+                await _BookieDBContext.SaveChangesAsync();
+            }
+            else if (EntityType == "Chapter")
+            {
+                chapter = _BookieDBContext.Chapters.FirstOrDefault(x => x.Id == EntityId);
+                if (chapter != null)
+                {
+                    cm.ChapterId = EntityId;
+                    cm.EntityId = EntityId;
+                    _BookieDBContext.Comments.Add(cm);
+                } 
                 await _BookieDBContext.SaveChangesAsync();
             }
         }

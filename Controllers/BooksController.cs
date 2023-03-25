@@ -40,7 +40,7 @@ namespace Bakalauras.controllers
         }
 
         [HttpPost]
-        [Authorize(Roles=BookieRoles.BookieUser)]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<ActionResult<BookDto>> Create(CreateBookDto createBookDto,string GenreName)
         {
             var book = new Book { Name = createBookDto.Name, GenreName= GenreName,
@@ -55,7 +55,7 @@ namespace Bakalauras.controllers
 
         [HttpPut]
         [Route("{bookId}")]
-        [Authorize(Roles = BookieRoles.Admin)]
+        [Authorize(Roles = BookieRoles.BookieUser+","+ BookieRoles.Admin)]
         public async Task<ActionResult<BookDto>> Update(int bookId, string GenreName, UpdateBookDto updateBookDto)
         {
             var book = await bookRepository.GetAsync(bookId, GenreName);

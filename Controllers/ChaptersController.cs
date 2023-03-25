@@ -18,6 +18,8 @@ using iText.Kernel.Pdf.Canvas.Parser;
 using System.Text.RegularExpressions;
 using Bakalauras.Migrations;
 using Bakalauras.Auth;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Bakalauras.Controllers
 {
@@ -40,7 +42,7 @@ namespace Bakalauras.Controllers
         {
             string content = _ChapterRepository.ExtractTextFromPDf(file);
 
-            Chapter chapter= new Chapter { Name=chapterName, BookId=bookId,Content= content };
+            Chapter chapter= new Chapter { Name=chapterName, BookId=bookId,Content= content,UserId= User.FindFirstValue(JwtRegisteredClaimNames.Sub) };
             await _ChapterRepository.CreateAsync(chapter);
 
             return new CreateChapterDto(chapterName, content);

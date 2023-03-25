@@ -41,8 +41,13 @@ namespace Bookie.controllers
             if (!createUserResult.Succeeded)
                 return BadRequest("Could not create a user.");
 
-           // Profile profile = new Profile(newUser);
-           //await profileRepo.CreateAsync(profile);
+            Profile profile = new Profile
+            {
+                UserId = newUser.Id,
+                Points = 0 
+            };
+
+            await _ProfileRepo.CreateAsync(profile);
 
             await _UserManager.AddToRoleAsync(newUser, BookieRoles.BookieUser);
 
@@ -66,6 +71,23 @@ namespace Bookie.controllers
             var accessToken =  _JwtTokenService.CreateAccessToken(user.UserName,user.Id,roles);
 
             return Ok(new SuccessfulLoginDto(accessToken));
+        }
+
+        [HttpPut]
+        [Route("block")]
+        [Authorize(Roles = BookieRoles.Admin)]
+        public async Task<ActionResult> BlockUser(string userName)
+        {
+            var user = await _UserManager.FindByNameAsync(userName);
+
+            if (user == null)
+                return BadRequest("Username not found.");
+
+            user.isBlocked= true;
+
+            await _UserManager.UpdateAsync(user);
+
+            return Ok(new UserBlockedDto(user.Id,user.UserName,user.isBlocked));
         }
     }
 }

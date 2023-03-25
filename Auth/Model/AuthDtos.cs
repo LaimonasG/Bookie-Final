@@ -8,5 +8,7 @@ namespace Bakalauras.Auth
 
     public record UserDto(string Id, string UserName, string Email);
 
+    public record UserBlockedDto(string Id, string UserName,bool isBlocked);
+
     public record SuccessfulLoginDto(string AccessToken);
 }
