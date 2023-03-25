@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Bakalauras.data.entities;
 using Bakalauras.data;
+using Bakalauras.data.dtos;
 
 namespace Bakalauras.data.repositories
 {
@@ -8,9 +9,10 @@ namespace Bakalauras.data.repositories
     {
         Task CreateAsync(Book book, string genreName);
         Task DeleteAsync(Book book);
-        Task<Book?> GetAsync(int bookId, string genreName);
+        Task<Book> GetAsync(int bookId);
         Task<IReadOnlyList<Book>> GetManyAsync();
 
+        ProfileBookOffersDto CalculateBookSubscribtionPrice(Book book);
         Task UpdateAsync(Book book);
 
         Task<IReadOnlyList<Book>> GetUserBooksAsync(string userId);
@@ -24,9 +26,9 @@ namespace Bakalauras.data.repositories
             bookieDBContext = context;
         }
 
-        public async Task<Book?> GetAsync(int bookId, string genreName)
+        public async Task<Book> GetAsync(int bookId)
         {
-            return await bookieDBContext.Books.FirstOrDefaultAsync(x => x.Id == bookId && x.GenreName == genreName);
+            return await bookieDBContext.Books.FirstOrDefaultAsync(x => x.Id == bookId);
         }
 
         public async Task<IReadOnlyList<Book>> GetManyAsync()
@@ -65,6 +67,24 @@ namespace Bakalauras.data.repositories
         {
             bookieDBContext.Books.Remove(book);
             await bookieDBContext.SaveChangesAsync();
+        }
+
+        public ProfileBookOffersDto CalculateBookSubscribtionPrice(Book book)
+        {
+            DateTime unpaidChapterReleaseDate = book.Created;
+            int periodToPayAmount = 0;
+
+            while (unpaidChapterReleaseDate < DateTime.Now)
+            {
+                unpaidChapterReleaseDate = unpaidChapterReleaseDate.AddDays(book.PaymentPeriodDays);
+                periodToPayAmount += 1;
+            }
+
+            periodToPayAmount -= 1;
+
+            ProfileBookOffersDto probo = new ProfileBookOffersDto(book.Id,book.PaymentPeriodDays,periodToPayAmount,book.Price);
+
+            return probo;
         }
     }
 }

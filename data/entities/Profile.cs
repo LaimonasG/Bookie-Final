@@ -11,6 +11,10 @@ namespace Bakalauras.data.entities
 
         public byte[]? ProfilePicture { get; set; }
 
+        public List<Tuple<int,DateTime>> LastBookPaymentDates { get; set; }
+
+        public List<Tuple<int, DateTime>> TextPurchaseDate { get; set; }
+
         public ICollection<ProfileBook> ProfileBooks { get; set; }
         public ICollection<ProfileText> ProfileTexts { get; set; }
 

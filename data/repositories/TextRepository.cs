@@ -11,9 +11,10 @@ namespace Bakalauras.data.repositories
     {
         Task CreateAsync(Text Text,string genreName);
         Task DeleteAsync(Text Text);
-        Task<Text?> GetAsync(int TextId, string genreName);
+        Task<Text?> GetAsync(int TextId);
         Task<IReadOnlyList<Text>> GetManyAsync(string genreName);
         Task UpdateAsync(Text Text);
+        Task<IReadOnlyList<Text>> GetUserTextsAsync(string userId);
     }
 
     public class TextsRepository : ITextRepository
@@ -32,14 +33,19 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
-        public async Task<Text?> GetAsync(int TextId, string genreName)
+        public async Task<Text?> GetAsync(int TextId)
         {
-            return await _BookieDBContext.Texts.FirstOrDefaultAsync(x => x.Id == TextId && x.GenreName == genreName);
+            return await _BookieDBContext.Texts.FirstOrDefaultAsync(x => x.Id == TextId);
         }
 
         public async Task<IReadOnlyList<Text>> GetManyAsync(string genreName)
         {
             return await _BookieDBContext.Texts.Where(x => x.GenreName == genreName).ToListAsync();
+        }
+
+        public async Task<IReadOnlyList<Text>> GetUserTextsAsync(string userId)
+        {
+            return await _BookieDBContext.Texts.Where(x => x.UserId == userId).ToListAsync();
         }
 
         public async Task UpdateAsync(Text Text)

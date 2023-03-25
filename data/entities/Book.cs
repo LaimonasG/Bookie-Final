@@ -17,6 +17,8 @@ public class Book : IUserOwnedResource
     public double Price { get; set; }
 
     public string Description { get; set; }
+
+    public int PaymentPeriodDays { get; set; }
     public DateTime Created { get; set; }
 
     public virtual ICollection<Chapter>? Chapters { get; set; }

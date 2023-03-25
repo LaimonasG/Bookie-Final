@@ -9,6 +9,8 @@ using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using static Bakalauras.data.dtos.ChaptersDto;
+using Microsoft.AspNetCore.Identity;
+using System.Net;
 
 namespace Bakalauras.Controllers
 {
@@ -18,6 +20,8 @@ namespace Bakalauras.Controllers
     {
         private readonly ITextRepository _Textrepostory;
         private readonly IChaptersRepository _ChaptersRepository;
+        private readonly UserManager<BookieUser> _UserManager;
+        private readonly IProfileRepository _ProfileRepository;
         private readonly IAuthorizationService authorizationService;
 
         public TextController(ITextRepository repo, IAuthorizationService authServise, IChaptersRepository chaptersRepository)
@@ -37,7 +41,7 @@ namespace Bakalauras.Controllers
         [Route("{textId}")]
         public async Task<ActionResult<BookDto>> Get(int textId, string GenreName)
         {
-            var text = await _Textrepostory.GetAsync(textId, GenreName);
+            var text = await _Textrepostory.GetAsync(textId);
             if (text == null) return NotFound();
             return new BookDto(text.Id, text.Name, text.GenreName, text.Content, text.Price, text.Created, text.UserId);
         }
@@ -58,7 +62,7 @@ namespace Bakalauras.Controllers
         [Authorize(Roles = $"{BookieRoles.BookieUser},{BookieRoles.Admin}")]
         public async Task<ActionResult<UpdateTextDto>> Update(int textId, [FromForm] IFormFile? file, [FromForm] string? textName,double Price,string genreName)
         {
-            var text = await _Textrepostory.GetAsync(textId, genreName);
+            var text = await _Textrepostory.GetAsync(textId);
             if (text == null) return NotFound();
             var authRez = await authorizationService.AuthorizeAsync(User, text, PolicyNames.ResourceOwner);
             if (!authRez.Succeeded)
@@ -79,12 +83,57 @@ namespace Bakalauras.Controllers
         [Route("{textId}")]
         public async Task<ActionResult> Remove(int textId, string GenreName)
         {
-            var text = await _Textrepostory.GetAsync(textId, GenreName);
+            var text = await _Textrepostory.GetAsync(textId);
             if (text == null) return NotFound();
             await _Textrepostory.DeleteAsync(text);
 
             //204
             return NoContent();
+        }
+
+        [HttpPut]
+        [Route("{textId}/subscribe")]
+        [Authorize(Roles = BookieRoles.BookieReader)]
+        public async Task<ActionResult<ProfileDto>> PurchaseText(int textId)
+        {
+            var text = await _Textrepostory.GetAsync(textId);
+            var user = await _UserManager.FindByIdAsync(JwtRegisteredClaimNames.Sub);
+            var profile = await _ProfileRepository.GetAsync(user.Id);
+            if (profile == null) return NotFound();
+            if (text == null) return NotFound();
+            var authorProfile = await _ProfileRepository.GetAsync((
+                                await _UserManager.FindByIdAsync((
+                                await _Textrepostory.GetAsync(textId)).UserId)).Id);
+            ProfileText prte = new ProfileText { TextId = textId, ProfileId = profile.Id };
+
+            if (profile.ProfileTexts == null) { profile.ProfileTexts = new List<ProfileText>(); }
+            if (text.ProfileTexts == null) { text.ProfileTexts = new List<ProfileText>(); }
+
+            if (profile.Points < text.Price)
+            {
+                return BadRequest("Insufficient points.");
+            }
+            else if(profile.ProfileTexts.Contains(prte) || text.ProfileTexts.Contains(prte))
+            {
+                return BadRequest("User already owns the text.");
+            }
+            else
+            {
+                profile.Points -= text.Price;
+                authorProfile.Points += text.Price;
+                profile.TextPurchaseDate.Add(new Tuple<int,DateTime>(textId, DateTime.Now));
+            }
+
+            profile.ProfileTexts.Add(prte);
+            text.ProfileTexts.Add(prte);
+
+            await _ProfileRepository.UpdateAsync(profile);
+            await _ProfileRepository.UpdateAsync(authorProfile);
+            await _Textrepostory.UpdateAsync(text);
+
+            List<Text> texts = (List<Text>)await _Textrepostory.GetUserTextsAsync(user.Id);
+
+            return Ok(new ProfileTextsDto(user.Id, user.UserName, texts));
         }
     }
 }

@@ -60,7 +60,7 @@ namespace Bakalauras.Controllers
                 UserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
             };
 
-            var text = await _TextRepository.GetAsync(textId, genreName);
+            var text = await _TextRepository.GetAsync(textId);
             if (text == null) return NotFound();
 
             await _CommentRepository.CreateAsync(comment, textId, _Type);

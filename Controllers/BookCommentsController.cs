@@ -61,7 +61,7 @@ namespace Bakalauras.Controllers
                 UserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
             };
 
-            var book = await _BookRepository.GetAsync(bookId, genreName);
+            var book = await _BookRepository.GetAsync(bookId);
             if (book == null) return NotFound();
 
             await _CommentRepository.CreateAsync(comment, bookId,_Type);
