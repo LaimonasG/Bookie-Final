@@ -14,18 +14,15 @@ public class Book : IUserOwnedResource
 
     public string Name { get; set; }
 
-    public double Price { get; set; }
+    public double ChapterPrice { get; set; }
 
     public string Description { get; set; }
 
-    public int PaymentPeriodDays { get; set; }
     public DateTime Created { get; set; }
 
     public virtual ICollection<Chapter>? Chapters { get; set; }
 
     public virtual ICollection<Comment>? Comments { get; set; }
-
-    public virtual ICollection<ProfileBook>? ProfileBooks { get; set; }
 
    public BookieUser User { get; set; }
 

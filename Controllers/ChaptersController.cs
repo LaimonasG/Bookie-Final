@@ -30,11 +30,14 @@ namespace Bakalauras.Controllers
         private readonly IChaptersRepository _ChapterRepository;
         private readonly UserManager<BookieUser> _UserManager;
         private readonly IAuthorizationService _AuthorizationService;
-        public ChaptersController(IChaptersRepository repo, IAuthorizationService authService, UserManager<BookieUser> userManager)
+        private readonly IBookRepository _BookRepository;
+        public ChaptersController(IChaptersRepository repo, IAuthorizationService authService,
+            UserManager<BookieUser> userManager,IBookRepository rep)
         {
             _ChapterRepository = repo;
             _AuthorizationService = authService;
             _UserManager = userManager;
+            _BookRepository = rep;
         }
 
         [HttpPost]

@@ -11,6 +11,7 @@ using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Bakalauras.Controllers
 {
@@ -43,7 +44,7 @@ namespace Bakalauras.Controllers
                                    on profile.UserId equals user.Id
                                    select new { User = user, Profile = profile };
 
-            return profiles.Select(x => new ProfileDto(x.User.Id,x.User.UserName,x.User.Email,x.Points));
+            return usersAndProfiles.Select(x => new ProfileDto(x.User.Id,x.User.UserName,x.User.Email,x.Profile.Points));
         }
 
         [HttpGet]
@@ -57,25 +58,12 @@ namespace Bakalauras.Controllers
             return new ProfileDto(user.Id, user.UserName, user.Email, profile.Points);
         }
 
-        //[HttpPost]
-        //[Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        //public async Task<ActionResult<ProfileDto>> Create(CreateProfileDto dto)
-        //{
-        //    var profile = new Profile{Points=0,UserId=dto.userId};
-
-        //    await _ProfileRepository.CreateAsync(profile);
-        //    var user = await _UserManager.FindByIdAsync(profile.UserId);
-
-        //    //201
-        //    return Created("201", new ProfileDto(user.Id, user.UserName, user.Email, profile.Points));
-        //}
-
         [HttpPut]
         [Route("{userId}")]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<BookDto>> Update(UpdateProfileDto dto)
+        public async Task<ActionResult<BookDto>> UpdatePoints(UpdateProfilePointsDto dto,string userId)
         {
-            var profile = await _ProfileRepository.GetAsync(dto.userId);
+            var profile = await _ProfileRepository.GetAsync(userId);
             if (profile == null) return NotFound();
             var user = await _UserManager.FindByIdAsync(profile.UserId);
             var authRez = await _AuthorizationService.AuthorizeAsync(User, profile, PolicyNames.ResourceOwner);
@@ -85,7 +73,7 @@ namespace Bakalauras.Controllers
                 return Forbid();
             }
 
-            profile.Points= dto.points;
+            profile.Points= dto.Points;
 
             await _ProfileRepository.UpdateAsync(profile);
 
@@ -93,11 +81,31 @@ namespace Bakalauras.Controllers
         }
 
         [HttpPut]
+        [Route("info/{userId}")]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<BookDto>> UpdatePersonalInfo(PersonalInfoDto dto,string userId)
+        {
+            var profile = await _ProfileRepository.GetAsync(userId);
+            if (profile == null) return NotFound();
+            var user = await _UserManager.FindByIdAsync(profile.UserId);
+            var authRez = await _AuthorizationService.AuthorizeAsync(User, profile, PolicyNames.ResourceOwner);
+
+            if (!authRez.Succeeded)
+            {
+                return Forbid();
+            }
+
+            await _ProfileRepository.UpdatePersonalInfoAsync(dto, userId);
+
+            return Ok(new PersonalInfoDto(user.UserName, user.Email));
+        }
+
+        [HttpPut]
         [Route("{userId}/picture")]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<ProfileDto>> UploadProfilePicture(IFormFile file)
+        public async Task<ActionResult<ProfileDto>> UploadProfilePicture(string userId,IFormFile file)
         {
-            var user = await _UserManager.FindByIdAsync(JwtRegisteredClaimNames.Sub);
+            var user = await _UserManager.FindByIdAsync(userId);
             var profile = await _ProfileRepository.GetAsync(user.Id);
             if (profile == null) return NotFound();
 
@@ -120,9 +128,9 @@ namespace Bakalauras.Controllers
         [HttpGet]
         [Route("{userId}/picture")]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<ProfileDto>> GetProfilePicture()
+        public async Task<ActionResult<ProfileDto>> GetProfilePicture(string userId)
         {
-            var user = await _UserManager.FindByIdAsync(JwtRegisteredClaimNames.Sub);
+            var user = await _UserManager.FindByIdAsync(userId);
             var profile = await _ProfileRepository.GetAsync(user.Id);
             if (profile == null) return NotFound();
 
@@ -146,9 +154,9 @@ namespace Bakalauras.Controllers
         }
 
         [HttpPut]
-        [Route("{userId}/paymentOffers")]
+        [Route("{userId}/pay")]
         [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<ProfileBookPaymentDto>> PayForSubscribtion(ProfileBookOffersDto dto)
+        public async Task<ActionResult<ProfileBookPaymentDto>> PayForSubscribtion(ProfilePayDto dto)
         {
             var user = await _UserManager.FindByIdAsync(JwtRegisteredClaimNames.Sub);
             var authorProfile = await _ProfileRepository.GetAsync((
@@ -157,7 +165,11 @@ namespace Bakalauras.Controllers
 
             var profile = await _ProfileRepository.GetAsync(user.Id);
             if (profile == null) return NotFound();
-            var bookPeriodPoints = dto.price * dto.PeriodAmount;
+
+            var book = await _BookRepository.GetAsync(dto.bookId);
+            var payments = _ProfileRepository.ConvertToTupleList(profile.LastBookChapterPayments);
+            var profileOffer =  _ProfileRepository.CalculateBookOffer(book, payments);
+            var bookPeriodPoints = profileOffer.price * profileOffer.ChapterAmount;
             if (profile.Points < bookPeriodPoints)
             {
                 return BadRequest("Insufficient points.");
@@ -165,8 +177,12 @@ namespace Bakalauras.Controllers
             else
             {
                 profile.Points -= bookPeriodPoints;
-                Tuple<int, DateTime> newDate = new Tuple<int, DateTime>(dto.bookId, DateTime.Now);
-                profile.LastBookPaymentDates.Add(newDate);
+                Tuple<int, int> newChapter = new Tuple<int, int>(dto.bookId, profileOffer.LastPaidChapterId);
+                StringBuilder temp = new StringBuilder();
+                temp.Append(profile.LastBookChapterPayments);
+                temp.Append(_ProfileRepository.ConvertToString(newChapter));
+                temp.Append(';');
+                profile.LastBookChapterPayments=temp.ToString();
                 authorProfile.Points += bookPeriodPoints;
             }
 

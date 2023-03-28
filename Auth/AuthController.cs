@@ -18,10 +18,11 @@ namespace Bookie.controllers
         private readonly Bakalauras.Auth.IJwtTokenService _JwtTokenService;
         private readonly IProfileRepository _ProfileRepo;
 
-        public AuthController(UserManager<BookieUser> userManager, IJwtTokenService jwtTokenService)
+        public AuthController(UserManager<BookieUser> userManager, IJwtTokenService jwtTokenService,IProfileRepository repo)
         {
             _UserManager = userManager;
             _JwtTokenService = jwtTokenService;
+            _ProfileRepo = repo;
         }
 
         [HttpPost]
@@ -44,12 +45,14 @@ namespace Bookie.controllers
             Profile profile = new Profile
             {
                 UserId = newUser.Id,
-                Points = 0 
+                Points = 0,
+                User=newUser
             };
 
             await _ProfileRepo.CreateAsync(profile);
 
             await _UserManager.AddToRoleAsync(newUser, BookieRoles.BookieUser);
+            await _UserManager.AddToRoleAsync(newUser, BookieRoles.BookieReader);
 
             return CreatedAtAction(nameof(Register), new UserDto(newUser.Id, newUser.UserName, newUser.Email));
         }

@@ -69,10 +69,10 @@ namespace Bakalauras.data
                 .WithMany(pu => pu.ProfileBooks)
                 .HasForeignKey(p => p.ProfileId);
 
-            modelBuilder.Entity<ProfileBook>()
-                .HasOne(u => u.Book)
-                .WithMany(pu => pu.ProfileBooks)
-                .HasForeignKey(u => u.BookId);
+            //modelBuilder.Entity<ProfileBook>()
+            //    .HasOne(u => u.Book)
+            //    .WithMany(pu => pu.ProfileBooks)
+            //    .HasForeignKey(u => u.BookId);
 
             modelBuilder.Entity<ProfileText>()
                 .HasKey(x => new { x.TextId, x.ProfileId });

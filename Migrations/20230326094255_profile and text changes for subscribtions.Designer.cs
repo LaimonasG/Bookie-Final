@@ -4,6 +4,7 @@ using Bakalauras.data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bakalauras.Migrations
 {
     [DbContext(typeof(BookieDBContext))]
-    partial class BookieDBContextModelSnapshot : ModelSnapshot
+    [Migration("20230326094255_profile and text changes for subscribtions")]
+    partial class profileandtextchangesforsubscribtions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -126,9 +128,6 @@ namespace Bakalauras.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
-                    b.Property<double>("ChapterPrice")
-                        .HasColumnType("float");
-
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
 
@@ -143,6 +142,12 @@ namespace Bakalauras.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PaymentPeriodDays")
+                        .HasColumnType("int");
+
+                    b.Property<double>("Price")
+                        .HasColumnType("float");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -300,7 +305,8 @@ namespace Bakalauras.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
-                    b.Property<string>("LastBookChapterPayments")
+                    b.Property<string>("LastBookPaymentDates")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<double>("Points")
@@ -310,6 +316,7 @@ namespace Bakalauras.Migrations
                         .HasColumnType("varbinary(max)");
 
                     b.Property<string>("TextPurchaseDates")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserId")
@@ -606,7 +613,7 @@ namespace Bakalauras.Migrations
             modelBuilder.Entity("Bakalauras.data.entities.ProfileBook", b =>
                 {
                     b.HasOne("Bakalauras.data.entities.Book", "Book")
-                        .WithMany()
+                        .WithMany("ProfileBooks")
                         .HasForeignKey("BookId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -708,6 +715,8 @@ namespace Bakalauras.Migrations
                     b.Navigation("Chapters");
 
                     b.Navigation("Comments");
+
+                    b.Navigation("ProfileBooks");
                 });
 
             modelBuilder.Entity("Bakalauras.data.entities.Chapter", b =>

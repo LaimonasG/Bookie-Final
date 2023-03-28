@@ -11,6 +11,7 @@ using System.Security.Claims;
 using static Bakalauras.data.dtos.ChaptersDto;
 using Microsoft.AspNetCore.Identity;
 using System.Net;
+using System.Text;
 
 namespace Bakalauras.Controllers
 {
@@ -39,11 +40,11 @@ namespace Bakalauras.Controllers
 
         [HttpGet]
         [Route("{textId}")]
-        public async Task<ActionResult<BookDto>> Get(int textId, string GenreName)
+        public async Task<ActionResult<TextDto>> Get(int textId)
         {
             var text = await _Textrepostory.GetAsync(textId);
             if (text == null) return NotFound();
-            return new BookDto(text.Id, text.Name, text.GenreName, text.Content, text.Price, text.Created, text.UserId);
+            return new TextDto(text.Id, text.Name, text.GenreName, text.Content, text.Price, text.Created, text.UserId);
         }
 
         [HttpPost]
@@ -81,7 +82,7 @@ namespace Bakalauras.Controllers
 
         [HttpDelete]
         [Route("{textId}")]
-        public async Task<ActionResult> Remove(int textId, string GenreName)
+        public async Task<ActionResult> Remove(int textId)
         {
             var text = await _Textrepostory.GetAsync(textId);
             if (text == null) return NotFound();
@@ -121,7 +122,12 @@ namespace Bakalauras.Controllers
             {
                 profile.Points -= text.Price;
                 authorProfile.Points += text.Price;
-                profile.TextPurchaseDate.Add(new Tuple<int,DateTime>(textId, DateTime.Now));
+                Tuple<int, DateTime> newDate = new Tuple<int, DateTime>(textId, DateTime.Now);
+                StringBuilder temp = new StringBuilder();
+                temp.Append(profile.TextPurchaseDates);
+                temp.Append(_ProfileRepository.ConvertToStringTextDate(newDate));
+                temp.Append(';');
+                profile.TextPurchaseDates = temp.ToString();
             }
 
             profile.ProfileTexts.Add(prte);
