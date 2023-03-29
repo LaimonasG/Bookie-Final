@@ -166,10 +166,10 @@ namespace Bakalauras.Controllers
             var profile = await _ProfileRepository.GetAsync(user.Id);
             if (profile == null) return NotFound();
 
+            var profileBook = await _ProfileRepository.GetProfileBookRecord(dto.bookId, profile.Id);
             var book = await _BookRepository.GetAsync(dto.bookId);
-            var payments = _ProfileRepository.ConvertToTupleList(profile.LastBookChapterPayments);
-            var profileOffer =  _ProfileRepository.CalculateBookOffer(book, payments);
-            var bookPeriodPoints = profileOffer.price * profileOffer.ChapterAmount;
+            var profileOffer = _ProfileRepository.CalculateBookOffer(profileBook);
+            var bookPeriodPoints = book.ChapterPrice * profileOffer.ChapterAmount;
             if (profile.Points < bookPeriodPoints)
             {
                 return BadRequest("Insufficient points.");
@@ -177,12 +177,22 @@ namespace Bakalauras.Controllers
             else
             {
                 profile.Points -= bookPeriodPoints;
-                Tuple<int, int> newChapter = new Tuple<int, int>(dto.bookId, profileOffer.LastPaidChapterId);
-                StringBuilder temp = new StringBuilder();
-                temp.Append(profile.LastBookChapterPayments);
-                temp.Append(_ProfileRepository.ConvertToString(newChapter));
-                temp.Append(';');
-                profile.LastBookChapterPayments=temp.ToString();
+                
+
+                var oldPB = await _ProfileRepository.GetProfileBookRecord(book.Id, profile.Id);
+                if (oldPB.BoughtChapterList == null)
+                {
+                    oldPB.BoughtChapterList= new List<int>();
+                }
+                oldPB.BoughtChapterList.AddRange(profileOffer.chapters.Select(x => x.Id).ToList());
+                await _ProfileRepository.UpdateProfileBookRecord(oldPB);
+
+                // Tuple<int, int> newChapter = new Tuple<int, int>(dto.bookId, profileOffer.LastPaidChapterId);
+                //StringBuilder temp = new StringBuilder();
+                //temp.Append(profile.LastBookChapterPayments);
+                //temp.Append(_ProfileRepository.ConvertToString(newChapter));
+                //temp.Append(';');
+                //profile.LastBookChapterPayments=temp.ToString();
                 authorProfile.Points += bookPeriodPoints;
             }
 

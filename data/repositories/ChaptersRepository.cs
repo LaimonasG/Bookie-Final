@@ -15,6 +15,8 @@ namespace Bakalauras.data.repositories
         Task DeleteAsync(Chapter chapter);
         Task<Chapter?> GetAsync(int chapterId, int bookId);
         Task<IReadOnlyList<Chapter>> GetManyAsync(int bookId);
+
+        Task<List<int>> GetManyChapterIdsAsync(int bookId);
         Task UpdateAsync(Chapter chapter);
         string ExtractTextFromPDf(IFormFile file);
     }  
@@ -43,6 +45,12 @@ namespace Bakalauras.data.repositories
         public async Task<IReadOnlyList<Chapter>> GetManyAsync(int bookId)
         {
             return await bookieDBContext.Chapters.Where(x => x.BookId == bookId).ToListAsync();
+        }
+
+        async Task<List<int>> GetManyChapterIdsAsync(int bookId)
+        {
+            var ch = await GetManyAsync(bookId);
+            return ch.Select(x=>x.Id).ToList();
         }
 
         public async Task UpdateAsync(Chapter chapter)

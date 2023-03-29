@@ -12,7 +12,7 @@ namespace Bakalauras.data.entities
 
         public byte[]? ProfilePicture { get; set; }
 
-        public string? LastBookChapterPayments { get; set; }
+     //   public string? LastBookChapterPayments { get; set; }
 
         public string? TextPurchaseDates { get; set; }
 

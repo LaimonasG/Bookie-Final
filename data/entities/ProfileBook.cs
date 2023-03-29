@@ -8,5 +8,7 @@ namespace Bakalauras.data.entities
         public Profile Profile { get; set; }
         public int BookId { get; set; }
         public Book Book { get; set; }
+        public bool WasUnsubscribed { get; set; }
+        public List<int>? BoughtChapterList { get; set; }
     }
 }
