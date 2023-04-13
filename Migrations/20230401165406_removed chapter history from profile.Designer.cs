@@ -4,6 +4,7 @@ using Bakalauras.data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bakalauras.Migrations
 {
     [DbContext(typeof(BookieDBContext))]
-    partial class BookieDBContextModelSnapshot : ModelSnapshot
+    [Migration("20230401165406_removed chapter history from profile")]
+    partial class removedchapterhistoryfromprofile
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -323,19 +325,16 @@ namespace Bakalauras.Migrations
             modelBuilder.Entity("Bakalauras.data.entities.ProfileBook", b =>
                 {
                     b.Property<int>("ProfileId")
-                        .HasColumnType("int")
-                        .HasColumnOrder(0);
+                        .HasColumnType("int");
 
                     b.Property<int>("BookId")
-                        .HasColumnType("int")
-                        .HasColumnOrder(1);
+                        .HasColumnType("int");
 
                     b.Property<string>("BoughtChapterList")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("WasUnsubscribed")
-                        .HasColumnType("bit")
-                        .HasColumnOrder(3);
+                        .HasColumnType("bit");
 
                     b.HasKey("ProfileId", "BookId");
 

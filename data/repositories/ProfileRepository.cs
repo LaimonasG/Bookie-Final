@@ -21,21 +21,29 @@ namespace Bakalauras.data.repositories
         Task UpdatePersonalInfoAsync(PersonalInfoDto dto, string userId);
         Task<List<ProfileBookOffersDto>> CalculateBookOffers(Profile profile);
         ProfileBookOffersDto CalculateBookOffer(ProfileBook pb);
-        ProfileBookOffersDto CalculateBookSubscriptionPrice(Book book, string LastBookChapterPayments, List<int> oldSub);
+        ProfileBookOffersDto CalculateBookSubscriptionPrice(ProfileBook pb,Book book);
         ProfilePurchacesDto GetProfilePurchases(Profile profile);
-        //Tuple<int, int> ConvertToTuple(string tupleString);
-        //List<Tuple<int, int>> ConvertToTupleList(string tupleListString);
+
+        List<Tuple<int, int>> ConvertToTupleList(string tupleListString);
         Task RemoveProfileBookAsync(ProfileBook prbo);
 
         public List<ProfileBook> GetProfileBooks(Profile profile);
 
-        Task<ProfileBook> GetProfileBookRecord(int bookId,int profileId);
+        Task<ProfileBook> GetProfileBookRecordSubscribed(int bookId,int profileId);
+
+        Task<ProfileBook> GetProfileBookRecordUnSubscribed(int bookId, int profileId);
 
         Task UpdateProfileBookRecord(ProfileBook pb);
 
-        //string ConvertToString(Tuple<int, int> tuple);
+        string ConvertIdsToString(List<int> data);
 
-        //string ConvertToStringTextDate(Tuple<int, DateTime> tuple);
+        List<int> ConvertStringToIds(string data);
+
+        string ConvertToStringTextDate(Tuple<int, DateTime> tuple);
+
+        bool WasBookSubscribed(ProfileBook prbo, Profile profile);
+
+        bool HasEnoughPoints(double userPoints,double costpoints);
 
     }
     public class ProfileRepository : IProfileRepository
@@ -80,6 +88,7 @@ namespace Bakalauras.data.repositories
 
         public async Task RemoveProfileBookAsync(ProfileBook prbo)
         {
+            prbo.WasUnsubscribed = true;
             _BookieDBContext.ProfileBooks.Update(prbo);
             await _BookieDBContext.SaveChangesAsync();
         }
@@ -121,140 +130,122 @@ namespace Bakalauras.data.repositories
 
         public ProfileBookOffersDto CalculateBookOffer(ProfileBook pb)
         {
-            if (pb.BoughtChapterList == null) { pb.BoughtChapterList = new List<int>(); }
+            var BoughtChapterList = ConvertStringToIds(pb.BoughtChapterList);
+            if (BoughtChapterList == null) { BoughtChapterList = new List<int>(); }
 
-            int lastPaidChapterId = pb.BoughtChapterList
-                                             .OrderByDescending(p => p)
-                                             .Select(p => p)
-                                             .FirstOrDefault();
-
-            int lastReleasedChapterId = _BookieDBContext.Chapters
+            var releasedChapters = _BookieDBContext.Chapters
                                         .Where(x => x.BookId == pb.BookId)
-                                        .OrderByDescending(t => t.Id)
                                         .Select(t => t.Id)
-                                        .FirstOrDefault();
+                                        .ToList();
 
-            if (lastPaidChapterId != lastReleasedChapterId)
+            var missingChapters=releasedChapters.Except(BoughtChapterList).ToList();
+
+            if (missingChapters!=null)
             {
-                var unpaidChapters = _BookieDBContext.Chapters
-                                     .Where(x => x.BookId == pb.BookId)
-                                     .Where(ch => ch.Id > lastPaidChapterId && ch.Id <= lastReleasedChapterId)
-                                     .ToList();
-
-                if (unpaidChapters.Count > 0)
+                if (missingChapters.Count > 0)
                 {
-                    var lastPaidChapter = unpaidChapters
-                                      .OrderByDescending(ch => ch.Id)
-                                      .Select(t => t.Id)
-                                      .FirstOrDefault();
                     ProfileBookOffersDto offer = new ProfileBookOffersDto
-                    (pb.BookId, unpaidChapters.Count, unpaidChapters, lastPaidChapter);
+                    (pb.BookId, missingChapters);
                     return offer;
-                }
+                }   
             }
 
-            return null;
+            ProfileBookOffersDto rez = new ProfileBookOffersDto
+                    (pb.BookId, new List<int>());
+            return rez;
         }
 
-        public ProfileBookOffersDto CalculateBookSubscriptionPrice(Book book, string LastBookChapterPayments,List<int> oldSubBooks)
+        public ProfileBookOffersDto CalculateBookSubscriptionPrice(ProfileBook pb,Book book)
         {
-            if (LastBookChapterPayments == null || LastBookChapterPayments == "")
+            List<Chapter> chapters = book.Chapters != null ? book.Chapters.ToList() : new List<Chapter>();
+            if (pb.BoughtChapterList.Count()==0)
             {
-                List<Chapter> chapters = book.Chapters != null ? book.Chapters.ToList() : new List<Chapter>();
-                Chapter lastChapter = book?.Chapters?.LastOrDefault();
-                if (lastChapter != null)
+                if (chapters.Count != null)
                 {
+                    List<int> ids=chapters.Select(x=>x.Id).ToList();
                     ProfileBookOffersDto offer = new ProfileBookOffersDto
-                    (book.Id, chapters.Count, chapters, lastChapter.Id);
+                    (book.Id, ids);
                     return offer;
                 }
                 else
                 {
                     ProfileBookOffersDto offer = new ProfileBookOffersDto
-                    (book.Id, chapters.Count, chapters, 0);
+                    (book.Id, new List<int>());
                     return offer;
                 }  
             }
             else
             {
-                List<Tuple<int, int>> payments = ConvertToTupleList(LastBookChapterPayments);
-
-                if(oldSubBooks.Count!=0)
-                {
-                    payments=payments.Where(x=>!oldSubBooks.Contains(x.Item2)).ToList();
-                }
-
-                var probo = CalculateBookOffer(book, payments);
+                var probo = CalculateBookOffer(pb);
                 return probo;
             }              
         }
 
         public ProfilePurchacesDto GetProfilePurchases(Profile profile)
         {
-            List<Tuple<int, int>> BookPayments = ConvertToTupleList(profile.LastBookChapterPayments);
+            List<ProfileBook> pbs = GetProfileBooks(profile);
+
+            List<Tuple<int, int>> bookChapterPairs = pbs
+                    .SelectMany(pb => ConvertStringToIds(pb.BoughtChapterList).Select(chapterId => Tuple.Create(pb.BookId, chapterId)))
+                    .ToList();
+
             List<Tuple<int, int>> TextPurchases = ConvertToTupleList(profile.TextPurchaseDates);
-            List<Tuple<int, int>> BookPaymentsRez = new List<Tuple<int, int>>();
-            List<Tuple<int, int>> TextPaymentsRez = new List<Tuple<int, int>>();
 
-            foreach (Tuple<int, int> tp in BookPayments)
-            {
-                BookPaymentsRez.Add(new Tuple<int, int>(tp.Item1, tp.Item2));
-            }
-
-            foreach (Tuple<int, int> tp in TextPurchases)
-            {
-                TextPaymentsRez.Add(new Tuple<int, int>(tp.Item1, tp.Item2));
-            }
-
-            ProfilePurchacesDto result = new ProfilePurchacesDto(BookPaymentsRez, TextPaymentsRez);
+            ProfilePurchacesDto result = new ProfilePurchacesDto(bookChapterPairs, TextPurchases);
 
             return result;
         }
 
-        //public Tuple<int, int> ConvertToTuple(string tupleString)
-        //{
-        //    int intVal1 = 0;
-        //    int intVal2 = 0;
-
-        //    // check if the input string is in the expected format "(intVal, intVal)"
-        //    if (tupleString.StartsWith("(") && tupleString.EndsWith(")"))
-        //    {
-        //        string[] values = tupleString.Substring(1, tupleString.Length - 2).Split(',');
-        //        if (values.Length == 2)
-        //        {
-        //            int.TryParse(values[0], out intVal1);
-        //            int.TryParse(values[1], out intVal2);
-        //        }
-        //    }
-
-        //    return Tuple.Create(intVal1, intVal2);
-        //}
-
-        //public List<Tuple<int, int>> ConvertToTupleList(string tupleListString)
-        //{
-        //    List<Tuple<int, int>> tupleList = new List<Tuple<int, int>>();
-
-        //    // check if the input string is in the expected format "[ (intVal, dateTimeString); (intVal, dateTimeString); ... ]"
-        //    if (tupleListString.StartsWith("[") && tupleListString.EndsWith("]"))
-        //    {
-        //        string[] tuples = tupleListString.Substring(1, tupleListString.Length - 2).Split(';');
-        //        foreach (string tuple in tuples)
-        //        {
-        //            Tuple<int, int> tupleVal = ConvertToTuple(tuple.Trim());
-        //            if (tupleVal != null)
-        //            {
-        //                tupleList.Add(tupleVal);
-        //            }
-        //        }
-        //    }
-
-        //    return tupleList;
-        //}
-
-        public async Task<ProfileBook> GetProfileBookRecord(int bookId, int profileId)
+        public Tuple<int, int> ConvertToTuple(string tupleString)
         {
-            return (ProfileBook)_BookieDBContext.ProfileBooks.Where(x=>x.BookId==bookId &&x.ProfileId==profileId
-            && x.WasUnsubscribed==false);
+            int intVal1 = 0;
+            int intVal2 = 0;
+
+            // check if the input string is in the expected format "(intVal, intVal)"
+            if (tupleString.StartsWith("(") && tupleString.EndsWith(")"))
+            {
+                string[] values = tupleString.Substring(1, tupleString.Length - 2).Split(',');
+                if (values.Length == 2)
+                {
+                    int.TryParse(values[0], out intVal1);
+                    int.TryParse(values[1], out intVal2);
+                }
+            }
+
+            return Tuple.Create(intVal1, intVal2);
+        }
+
+        public List<Tuple<int, int>> ConvertToTupleList(string tupleListString)
+        {
+            List<Tuple<int, int>> tupleList = new List<Tuple<int, int>>();
+
+            if(tupleListString!=null)
+            if (tupleListString.StartsWith("[") && tupleListString.EndsWith("]"))
+            {
+                string[] tuples = tupleListString.Substring(1, tupleListString.Length - 2).Split(';');
+                foreach (string tuple in tuples)
+                {
+                    Tuple<int, int> tupleVal = ConvertToTuple(tuple.Trim());
+                    if (tupleVal != null)
+                    {
+                        tupleList.Add(tupleVal);
+                    }
+                }
+            }
+
+            return tupleList;
+        }
+
+        public async Task<ProfileBook> GetProfileBookRecordSubscribed(int bookId, int profileId)
+        {
+            return await _BookieDBContext.ProfileBooks
+           .SingleOrDefaultAsync(x => x.BookId == bookId && x.ProfileId == profileId && x.WasUnsubscribed == false);
+        }
+
+        public async Task<ProfileBook> GetProfileBookRecordUnSubscribed(int bookId, int profileId)
+        {
+            return await _BookieDBContext.ProfileBooks
+           .SingleOrDefaultAsync(x => x.BookId == bookId && x.ProfileId == profileId && x.WasUnsubscribed == true);
         }
 
         public async Task UpdateProfileBookRecord(ProfileBook pb)
@@ -263,15 +254,49 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
-        //public string ConvertToString(Tuple<int, int> tuple)
-        //{
-        //    return $"({tuple.Item1}, {tuple.Item2})";
-        //}
+        public string ConvertToStringTextDate(Tuple<int, DateTime> tuple)
+        {
+            return $"({tuple.Item1}, {tuple.Item2:o})";
+        }
 
-        //public string ConvertToStringTextDate(Tuple<int, DateTime> tuple)
-        //{
-        //    return $"({tuple.Item1}, {tuple.Item2:o})";
-        //}
+        public string ConvertIdsToString(List<int> data)
+        {
+            if (data == null || data.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            foreach (int id in data)
+            {
+                sb.Append(id);
+                sb.Append(",");
+            }
+
+            sb.Length--; 
+            return sb.ToString();
+        }
+
+        public List<int> ConvertStringToIds(string data)
+        {
+            if (string.IsNullOrEmpty(data))
+            {
+                return new List<int>();
+            }
+
+            return data.Split(',').Select(int.Parse).ToList();
+        }
+
+        public bool WasBookSubscribed(ProfileBook prbo, Profile profile)
+        {
+            return profile.ProfileBooks.Contains(prbo);
+        }
+
+        public bool HasEnoughPoints(double userPoints, double costpoints)
+        {
+            return userPoints >= costpoints;
+        }
+
 
     }
 }

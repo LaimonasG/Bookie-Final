@@ -128,53 +128,49 @@ namespace Bakalauras.controllers
                                 await _BookRepository.GetAsync(bookId)).UserId)).Id);
             if (profile == null) return NotFound();
             if (book == null) return NotFound();
-            ProfileBook prbo = new ProfileBook { BookId = bookId, ProfileId = profile.Id,BoughtChapterList=new List<int>() };
-
-            
+            ProfileBook prbo = new ProfileBook { BookId = bookId, ProfileId = profile.Id,BoughtChapterList="" };
 
             if (profile.ProfileBooks == null) { profile.ProfileBooks = new List<ProfileBook>(); }
 
-            if (profile.ProfileBooks.Contains(prbo))
+            if (_ProfileRepository.WasBookSubscribed(prbo, profile))
             {
                 return BadRequest("Book was already subscribed!");
             }
-            var chapters=await _ChaptersRepository.GetManyAsync(bookId);
+
+            ////add chapters to book and check for an old subscription
+            var chapters = await _ChaptersRepository.GetManyAsync(bookId);
             book.Chapters = (List<Chapter>)chapters;
-            ProfileBook OldSubscription = await _ProfileRepository.GetProfileBookRecord(bookId, profile.Id);
-            ProfileBookOffersDto bookOffer = new ProfileBookOffersDto { bookId = book.Id, ChapterAmount = 0 };
-
-            if (OldSubscription!= null)
+            ProfileBook OldSubscription = await _ProfileRepository.GetProfileBookRecordUnSubscribed(bookId, profile.Id);
+            ProfileBookOffersDto bookOffer = new ProfileBookOffersDto(bookId, new List<int>());
+            bool hasOldSub = false;
+            if (OldSubscription != null)
             {
-                if(OldSubscription.BoughtChapterList != null)
+                if (OldSubscription.BoughtChapterList != null)
                 {
-                    bookOffer = _ProfileRepository.CalculateBookSubscriptionPrice(OldSubscription);
-                }     
+                    bookOffer = _ProfileRepository.CalculateBookSubscriptionPrice(OldSubscription, book);
+                    hasOldSub = true;
+                }
             }
-           
 
-            var bookPeriodPoints = book.ChapterPrice * bookOffer.ChapterAmount;
-            if (profile.Points < bookPeriodPoints)
+            var bookPeriodPoints = book.ChapterPrice * bookOffer.MissingChapters.Count;
+            if (!_ProfileRepository.HasEnoughPoints(profile.Points, bookPeriodPoints))
             {
                 return BadRequest("Insufficient points.");
             }
-            else
+
+            profile.Points -= bookPeriodPoints;
+            authorProfile.Points += bookPeriodPoints;
+
+            //add all chapters as bought
+            if (hasOldSub)
             {
-                profile.Points -= bookPeriodPoints;
-                Tuple<int, int> newChapter = new Tuple<int, int>(bookOffer.bookId, 0);
-                StringBuilder temp = new StringBuilder();
-                temp.Append(profile.LastBookChapterPayments);
-                temp.Append(_ProfileRepository.ConvertToString(newChapter));
-                temp.Append(';');
-                profile.LastBookChapterPayments = temp.ToString();
-                authorProfile.Points += bookPeriodPoints;
+                OldSubscription.BoughtChapterList = _ProfileRepository.ConvertIdsToString(book.Chapters.Select(x => x.Id).ToList());
+                OldSubscription.WasUnsubscribed = false;
+                await _ProfileRepository.UpdateProfileBookRecord(OldSubscription);
             }
-            List<int> chapterIds = await _ChaptersRepository.GetManyChapterIdsAsync(bookId);
-            prbo.BoughtChapterList.AddRange(chapterIds);
-            profile.ProfileBooks.Add(prbo);
 
             await _ProfileRepository.UpdateAsync(profile);
             await _ProfileRepository.UpdateAsync(authorProfile);
-            await _BookRepository.UpdateAsync(book);
 
             List<SubscribeToBookDto> books = (List<SubscribeToBookDto>)
                 await _BookRepository.GetUserSubscribedBooksAsync(profile);
@@ -193,10 +189,13 @@ namespace Bakalauras.controllers
             if (profile == null) return NotFound();
             if (book == null) return NotFound();
 
-            ProfileBook prbo = new ProfileBook { BookId = bookId, ProfileId = profile.Id,WasUnsubscribed=true };
+            ProfileBook prbo =await _ProfileRepository.GetProfileBookRecordSubscribed(bookId, profile.Id);
 
-            try { await _ProfileRepository.RemoveProfileBookAsync(prbo); }
-            catch { return BadRequest("Book wasn't subscribed."); }
+            if (prbo == null)
+               return BadRequest("Book wasn't subscribed.");
+
+            await _ProfileRepository.RemoveProfileBookAsync(prbo);
+           
 
             List<SubscribeToBookDto> books = (List<SubscribeToBookDto>)
                 await _BookRepository.GetUserSubscribedBooksAsync(profile);

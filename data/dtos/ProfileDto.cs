@@ -10,7 +10,7 @@ namespace Bakalauras.data.dtos
 
     public record ProfileTextsDto(string userId, string userName, List<Text> texts);
 
-    public record ProfileBookOffersDto(int bookId,int ChapterAmount,List<Chapter>? chapters,int? LastPaidChapterId);
+    public record ProfileBookOffersDto(int bookId,List<int> MissingChapters);
 
     public record ProfilePayDto(int bookId);
     public record ProfilePurchacesDto(List<Tuple<int, int>> BookPayments, List<Tuple<int, int>> TextPayments);

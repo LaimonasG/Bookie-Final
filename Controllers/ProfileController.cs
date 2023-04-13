@@ -27,12 +27,13 @@ namespace Bakalauras.Controllers
         private readonly UserManager<BookieUser> _UserManager;
 
         public ProfileController(IProfileRepository repo, IAuthorizationService authService,
-            UserManager<BookieUser> userManager,ITextRepository repoText)
+            UserManager<BookieUser> userManager,ITextRepository repoText,IBookRepository repob)
         {
             _ProfileRepository = repo;
             _AuthorizationService = authService;
             _UserManager = userManager;
             _TextRepository = repoText;
+            _BookRepository = repob;
         }
         [HttpGet]
         public async Task<IEnumerable<ProfileDto>> GetMany()
@@ -109,6 +110,11 @@ namespace Bakalauras.Controllers
             var profile = await _ProfileRepository.GetAsync(user.Id);
             if (profile == null) return NotFound();
 
+            if (file.ContentType != "image/jpeg" && file.ContentType != "image/png")
+            {
+                return BadRequest("Only JPEG and PNG images are allowed.");
+            }
+
             byte[] fileBytes;
             using (var memoryStream = new MemoryStream())
             {
@@ -158,7 +164,7 @@ namespace Bakalauras.Controllers
         [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
         public async Task<ActionResult<ProfileBookPaymentDto>> PayForSubscribtion(ProfilePayDto dto)
         {
-            var user = await _UserManager.FindByIdAsync(JwtRegisteredClaimNames.Sub);
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var authorProfile = await _ProfileRepository.GetAsync((
                                 await _UserManager.FindByIdAsync((
                                 await _BookRepository.GetAsync(dto.bookId)).UserId)).Id);
@@ -166,35 +172,29 @@ namespace Bakalauras.Controllers
             var profile = await _ProfileRepository.GetAsync(user.Id);
             if (profile == null) return NotFound();
 
-            var profileBook = await _ProfileRepository.GetProfileBookRecord(dto.bookId, profile.Id);
+            var profileBook = await _ProfileRepository.GetProfileBookRecordSubscribed(dto.bookId, profile.Id);
             var book = await _BookRepository.GetAsync(dto.bookId);
             var profileOffer = _ProfileRepository.CalculateBookOffer(profileBook);
-            var bookPeriodPoints = book.ChapterPrice * profileOffer.ChapterAmount;
+            var bookPeriodPoints = book.ChapterPrice * profileOffer.MissingChapters.Count;
             if (profile.Points < bookPeriodPoints)
             {
                 return BadRequest("Insufficient points.");
             }
-            else
-            {
+     
                 profile.Points -= bookPeriodPoints;
                 
 
-                var oldPB = await _ProfileRepository.GetProfileBookRecord(book.Id, profile.Id);
-                if (oldPB.BoughtChapterList == null)
-                {
-                    oldPB.BoughtChapterList= new List<int>();
-                }
-                oldPB.BoughtChapterList.AddRange(profileOffer.chapters.Select(x => x.Id).ToList());
+                var oldPB = await _ProfileRepository.GetProfileBookRecordSubscribed(book.Id, profile.Id);
+                var BoughtChapterList = _ProfileRepository.ConvertStringToIds(oldPB.BoughtChapterList);
+                if (BoughtChapterList == null) { BoughtChapterList = new List<int>(); }
+
+                BoughtChapterList.AddRange(profileOffer.MissingChapters);
+                oldPB.BoughtChapterList = _ProfileRepository.ConvertIdsToString(BoughtChapterList);
+
                 await _ProfileRepository.UpdateProfileBookRecord(oldPB);
 
-                // Tuple<int, int> newChapter = new Tuple<int, int>(dto.bookId, profileOffer.LastPaidChapterId);
-                //StringBuilder temp = new StringBuilder();
-                //temp.Append(profile.LastBookChapterPayments);
-                //temp.Append(_ProfileRepository.ConvertToString(newChapter));
-                //temp.Append(';');
-                //profile.LastBookChapterPayments=temp.ToString();
                 authorProfile.Points += bookPeriodPoints;
-            }
+            
 
             await _ProfileRepository.UpdateAsync(profile);
             await _ProfileRepository.UpdateAsync(authorProfile);

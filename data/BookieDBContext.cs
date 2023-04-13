@@ -62,7 +62,7 @@ namespace Bakalauras.data
                 .HasForeignKey(u => u.ProfileId);
 
             modelBuilder.Entity<ProfileBook>()
-                .HasKey(x => new { x.BookId, x.ProfileId });
+                .HasKey(x => new { x.BookId, x.ProfileId,x.WasUnsubscribed });
 
             modelBuilder.Entity<ProfileBook>()
                 .HasOne(p => p.Profile)
@@ -86,6 +86,9 @@ namespace Bakalauras.data
                 .HasOne(u => u.Profile)
                 .WithMany(pu => pu.ProfileTexts)
                 .HasForeignKey(u => u.ProfileId);
+
+            modelBuilder.Entity<ProfileBook>()
+      .HasKey(pb => new { pb.ProfileId, pb.BookId });
 
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

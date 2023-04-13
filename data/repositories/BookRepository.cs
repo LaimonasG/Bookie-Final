@@ -90,6 +90,8 @@ namespace Bakalauras.data.repositories
             _BookieDBContext.Books.Remove(book);
             await _BookieDBContext.SaveChangesAsync();
         }
+
        
+
     }
 }
