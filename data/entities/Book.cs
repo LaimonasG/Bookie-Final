@@ -16,7 +16,11 @@ public class Book : IUserOwnedResource
 
     public double ChapterPrice { get; set; }
 
+    public double BookPrice { get; set; }
+
     public string Description { get; set; }
+
+    public int IsFinished { get; set; }
 
     public DateTime Created { get; set; }
 

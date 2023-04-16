@@ -45,6 +45,10 @@ namespace Bakalauras.data
 
         public DbSet<Text> Texts { get; set; }
 
+        public DbSet<Payment> Payments { get; set; }
+
+        public DbSet<PaymentUser> PaymentUsers { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -61,6 +65,19 @@ namespace Bakalauras.data
                 .WithMany(pu => pu.DailyQuestionProfiles)
                 .HasForeignKey(u => u.ProfileId);
 
+            modelBuilder.Entity<PaymentUser>()
+               .HasKey(x => new { x.Id });
+
+            modelBuilder.Entity<PaymentUser>()
+                .HasOne(p => p.Profile)
+                .WithMany(pu => pu.PaymentUser)
+                .HasForeignKey(p => p.ProfileId);
+
+            modelBuilder.Entity<PaymentUser>()
+                .HasOne(u => u.Payment)
+                .WithMany(pu => pu.PaymentUser)
+                .HasForeignKey(u => u.PaymentId);
+
             modelBuilder.Entity<ProfileBook>()
                 .HasKey(x => new { x.BookId, x.ProfileId,x.WasUnsubscribed });
 
@@ -68,11 +85,6 @@ namespace Bakalauras.data
                 .HasOne(p => p.Profile)
                 .WithMany(pu => pu.ProfileBooks)
                 .HasForeignKey(p => p.ProfileId);
-
-            //modelBuilder.Entity<ProfileBook>()
-            //    .HasOne(u => u.Book)
-            //    .WithMany(pu => pu.ProfileBooks)
-            //    .HasForeignKey(u => u.BookId);
 
             modelBuilder.Entity<ProfileText>()
                 .HasKey(x => new { x.TextId, x.ProfileId });

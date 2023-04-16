@@ -46,7 +46,7 @@ namespace Bakalauras.Controllers
             string content = _ChapterRepository.ExtractTextFromPDf(file);
 
             Chapter chapter= new Chapter { Name=chapterName, BookId=bookId,Content= content,UserId= User.FindFirstValue(JwtRegisteredClaimNames.Sub) };
-            await _ChapterRepository.CreateAsync(chapter);
+            await _ChapterRepository.CreateAsync(chapter, 0);
 
             return new CreateChapterDto(chapterName, content);
         }

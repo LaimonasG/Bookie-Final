@@ -15,6 +15,8 @@ namespace Bakalauras.data.repositories
         Task<IReadOnlyList<Text>> GetManyAsync(string genreName);
         Task UpdateAsync(Text Text);
         Task<IReadOnlyList<Text>> GetUserTextsAsync(string userId);
+        Task CreateProfileTextAsync(ProfileText pb);
+        Task<bool> WasTextBought(Text text);
     }
 
     public class TextsRepository : ITextRepository
@@ -58,6 +60,19 @@ namespace Bakalauras.data.repositories
         {
             _BookieDBContext.Texts.Remove(Text);
             await _BookieDBContext.SaveChangesAsync();
+        }
+
+        public async Task CreateProfileTextAsync(ProfileText pb)
+        {
+            _BookieDBContext.ProfileTexts.Add(pb);
+            await _BookieDBContext.SaveChangesAsync();
+        }
+
+        public async Task<bool> WasTextBought(Text text)
+        {
+            var found= await _BookieDBContext.ProfileTexts.FirstOrDefaultAsync(x => x.TextId==text.Id);
+            if (found != null) return true;
+            return false;
         }
     }
 }

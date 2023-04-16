@@ -12,7 +12,7 @@ namespace Bakalauras.data.repositories
 {
     public interface IChaptersRepository
     {
-        Task CreateAsync(Chapter chapter);
+        Task CreateAsync(Chapter chapter,int isFinished);
         Task DeleteAsync(Chapter chapter);
         Task<Chapter?> GetAsync(int chapterId, int bookId);
         Task<IReadOnlyList<Chapter>> GetManyAsync(int bookId);
@@ -30,11 +30,13 @@ namespace Bakalauras.data.repositories
             bookieDBContext = context;
         }
 
-        public async Task CreateAsync(Chapter chapter)
+        public async Task CreateAsync(Chapter chapter,int isFinished)
         {
             var book = bookieDBContext.Books.FirstOrDefault(x => x.Id == chapter.BookId);
-            if (book != null) chapter.BookId = chapter.BookId;
+            chapter.BookId = chapter.BookId;
+            book.IsFinished = isFinished;
             bookieDBContext.Chapters.Add(chapter);
+            bookieDBContext.Books.Update(book);
             await bookieDBContext.SaveChangesAsync();
         }
 

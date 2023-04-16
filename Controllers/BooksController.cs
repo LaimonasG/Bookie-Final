@@ -65,7 +65,8 @@ namespace Bakalauras.controllers
                 Name = createBookDto.Name,
                 GenreName = GenreName,
                 Description = createBookDto.Description,
-                ChapterPrice = createBookDto.Price,
+                ChapterPrice = createBookDto.ChapterPrice,
+                BookPrice=createBookDto.BookPrice,
                 Created = DateTime.Now,
                 UserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
             };
@@ -77,7 +78,6 @@ namespace Bakalauras.controllers
                 book.Created, book.UserId));
         }
 
-        //testavimui galima nustatyti sukurimo data
         [HttpPut]
         [Route("{bookId}")]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
@@ -94,7 +94,6 @@ namespace Bakalauras.controllers
 
             book.Name = updateBookDto.Name;
             book.Description = updateBookDto.Description;
-            book.ChapterPrice = updateBookDto.Price;
             book.Created = updateBookDto.Created;
 
             await _BookRepository.UpdateAsync(book);
@@ -126,6 +125,7 @@ namespace Bakalauras.controllers
             var authorProfile = await _ProfileRepository.GetAsync((
                                 await _UserManager.FindByIdAsync((
                                 await _BookRepository.GetAsync(bookId)).UserId)).Id);
+            //laikini tikrinimai
             if (profile == null) return NotFound();
             if (book == null) return NotFound();
             ProfileBook prbo = new ProfileBook { BookId = bookId, ProfileId = profile.Id,BoughtChapterList="" };
@@ -140,33 +140,38 @@ namespace Bakalauras.controllers
             ////add chapters to book and check for an old subscription
             var chapters = await _ChaptersRepository.GetManyAsync(bookId);
             book.Chapters = (List<Chapter>)chapters;
-            ProfileBook OldSubscription = await _ProfileRepository.GetProfileBookRecordUnSubscribed(bookId, profile.Id);
+            ProfileBook subscription = await _ProfileRepository.GetProfileBookRecordUnSubscribed(bookId, profile.Id);
             ProfileBookOffersDto bookOffer = new ProfileBookOffersDto(bookId, new List<int>());
             bool hasOldSub = false;
-            if (OldSubscription != null)
+            if (subscription != null)
             {
-                if (OldSubscription.BoughtChapterList != null)
+                if (subscription.BoughtChapterList != null)
                 {
-                    bookOffer = _ProfileRepository.CalculateBookSubscriptionPrice(OldSubscription, book);
+                    bookOffer = _ProfileRepository.CalculateBookSubscriptionPrice(subscription, book);
                     hasOldSub = true;
                 }
             }
+            else { subscription = new ProfileBook { BookId = bookId, ProfileId = profile.Id }; }
 
             var bookPeriodPoints = book.ChapterPrice * bookOffer.MissingChapters.Count;
             if (!_ProfileRepository.HasEnoughPoints(profile.Points, bookPeriodPoints))
             {
-                return BadRequest("Insufficient points.");
+                return BadRequest("Pirkiniui nepakanka taškų.");
             }
 
             profile.Points -= bookPeriodPoints;
             authorProfile.Points += bookPeriodPoints;
 
-            //add all chapters as bought
+            subscription.BoughtChapterList = _ProfileRepository.ConvertIdsToString(book.Chapters.Select(x => x.Id).ToList());
+            subscription.WasUnsubscribed = false;
+
             if (hasOldSub)
             {
-                OldSubscription.BoughtChapterList = _ProfileRepository.ConvertIdsToString(book.Chapters.Select(x => x.Id).ToList());
-                OldSubscription.WasUnsubscribed = false;
-                await _ProfileRepository.UpdateProfileBookRecord(OldSubscription);
+                await _ProfileRepository.UpdateProfileBookRecord(subscription);
+            }
+            else
+            {
+                await _ProfileRepository.CreateProfileBookRecord(subscription);
             }
 
             await _ProfileRepository.UpdateAsync(profile);
@@ -186,17 +191,59 @@ namespace Bakalauras.controllers
             var book = await _BookRepository.GetAsync(bookId);
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
+            //laikini tikrinimai
             if (profile == null) return NotFound();
             if (book == null) return NotFound();
 
             ProfileBook prbo =await _ProfileRepository.GetProfileBookRecordSubscribed(bookId, profile.Id);
 
             if (prbo == null)
-               return BadRequest("Book wasn't subscribed.");
+               return BadRequest("Knyga nebuvo prenumeruojama.");
 
             await _ProfileRepository.RemoveProfileBookAsync(prbo);
            
 
+            List<SubscribeToBookDto> books = (List<SubscribeToBookDto>)
+                await _BookRepository.GetUserSubscribedBooksAsync(profile);
+
+            return Ok(new ProfileBooksDto(user.Id, user.UserName, profile.Points, books));
+        }
+
+        [HttpPut]
+        [Route("{bookId}/buy")]
+        [Authorize(Roles = BookieRoles.BookieReader)]
+        public async Task<ActionResult<ProfileDto>> BuyBook(int bookId)
+        {
+            var book = await _BookRepository.GetAsync(bookId);
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            var profile = await _ProfileRepository.GetAsync(user.Id);
+            var authorProfile = await _ProfileRepository.GetAsync((
+                                await _UserManager.FindByIdAsync((
+                                await _BookRepository.GetAsync(bookId)).UserId)).Id);
+            //laikini tikrinimai
+            if (profile == null) return NotFound();
+            if (book == null) return NotFound();
+            if (authorProfile == null) return NotFound();
+            if (book.IsFinished == 0) return BadRequest("Knyga dar nebaigta");
+
+
+            if (!_ProfileRepository.HasEnoughPoints(profile.Points, book.BookPrice))
+            {
+                return BadRequest("Pirkiniui nepakanka taškų.");
+            }
+
+            ProfileBook pb=new ProfileBook { BookId=bookId,ProfileId=profile.Id};
+            pb.BoughtChapterList = _ProfileRepository.ConvertIdsToString(book.Chapters.Select(x => x.Id).ToList());
+            pb.BoughtDate = DateTime.Now;
+
+            authorProfile.Points += book.BookPrice;
+            profile.Points -= book.BookPrice;
+
+            await _ProfileRepository.CreateProfileBookRecord(pb);
+            await _ProfileRepository.UpdateAsync(profile);
+            await _ProfileRepository.UpdateAsync(authorProfile);
+
+            //testavimui, reiks istrint
             List<SubscribeToBookDto> books = (List<SubscribeToBookDto>)
                 await _BookRepository.GetUserSubscribedBooksAsync(profile);
 

@@ -3,11 +3,13 @@ using Bakalauras.data.dtos;
 using Bakalauras.data.entities;
 using iText.Layout.Element;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Org.BouncyCastle.Bcpg;
 using PagedList;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Bakalauras.data.repositories
 {
@@ -18,7 +20,7 @@ namespace Bakalauras.data.repositories
         Task<Profile?> GetAsync(string userId);
         Task<IReadOnlyList<Profile>> GetManyAsync();
         Task UpdateAsync(Profile profile);
-        Task UpdatePersonalInfoAsync(PersonalInfoDto dto, string userId);
+        Task<string> UpdatePersonalInfoAsync(PersonalInfoDto dto, string userId);
         Task<List<ProfileBookOffersDto>> CalculateBookOffers(Profile profile);
         ProfileBookOffersDto CalculateBookOffer(ProfileBook pb);
         ProfileBookOffersDto CalculateBookSubscriptionPrice(ProfileBook pb,Book book);
@@ -35,6 +37,8 @@ namespace Bakalauras.data.repositories
 
         Task UpdateProfileBookRecord(ProfileBook pb);
 
+        Task CreateProfileBookRecord(ProfileBook pb);
+
         string ConvertIdsToString(List<int> data);
 
         List<int> ConvertStringToIds(string data);
@@ -45,9 +49,16 @@ namespace Bakalauras.data.repositories
 
         bool HasEnoughPoints(double userPoints,double costpoints);
 
+        Task<List<Payment>> GetPaymentList();
+
+        Task PayForPoints(Profile userWallet, Payment payment);
+
+        Task<Payment> GetPayment(int paymentId);
+
     }
     public class ProfileRepository : IProfileRepository
     {
+        private const string SystemWalletId = "cf015658-171a-47ca-be37-98f04857c91d";
         private readonly BookieDBContext _BookieDBContext;
         private readonly IBookRepository _BookRepository;
         private readonly UserManager<BookieUser> _UserManager;
@@ -93,15 +104,40 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
-        public async Task UpdatePersonalInfoAsync(PersonalInfoDto dto, string userId)
+        public async Task<string> UpdatePersonalInfoAsync(PersonalInfoDto dto, string userId)
         {
             var user = await _UserManager.FindByIdAsync(userId);
+            bool badEmail = false;
+            bool badUsername=false;
+            string usernameEmailError = "Vartotojo vardo ir elektroninio pašto formatai neteisingi.";
+            string usernameError = "Vartotojo vardo formatas neteisingas.";
+            string emailError = "Elektroninio pašto formatas neteisingas.";
 
-            if (dto.userName != null) { user.UserName = dto.userName; user.NormalizedUserName = dto.userName; }
-            if (dto.email != null) { user.Email = dto.email; user.NormalizedEmail = dto.email; }
+            if (dto.userName != null)
+            {
+                if (dto.userName.Length > 25 && Regex.IsMatch(dto.userName, @"[^a-zA-Z0-9]"))
+                {
+                    badUsername=true;
+                }
+                user.UserName = dto.userName;
+                user.NormalizedUserName = dto.userName.ToUpper();
+            }
+            if (dto.email != null)
+            {
+                if (!Regex.IsMatch(dto.email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                {
+                    badEmail = true;
+                }
+                user.Email = dto.email;
+                user.NormalizedEmail = dto.email;
+            }
+            if (badEmail && badUsername) { return usernameEmailError; } else
+            if (badEmail) { return emailError; } else if(badUsername) { return usernameError; }
 
             _BookieDBContext.Users.Update(user);
             await _BookieDBContext.SaveChangesAsync();
+
+            return null;
         }
 
         public async Task<List<ProfileBookOffersDto>> CalculateBookOffers(Profile profile)
@@ -254,6 +290,12 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
+        public async Task CreateProfileBookRecord(ProfileBook pb)
+        {
+            _BookieDBContext.ProfileBooks.Add(pb);
+            await _BookieDBContext.SaveChangesAsync();
+        }
+
         public string ConvertToStringTextDate(Tuple<int, DateTime> tuple)
         {
             return $"({tuple.Item1}, {tuple.Item2:o})";
@@ -297,6 +339,27 @@ namespace Bakalauras.data.repositories
             return userPoints >= costpoints;
         }
 
+        public async Task<List<Payment>> GetPaymentList()
+        {
+            return await _BookieDBContext.Payments.ToListAsync();
+        }
 
+        public async Task<Payment> GetPayment(int paymentId)
+        {
+            return await _BookieDBContext.Payments.FirstOrDefaultAsync(x => x.Id == paymentId);
+        }
+
+        public async Task PayForPoints(Profile userWallet, Payment payment)
+        {
+            PaymentUser pu = new PaymentUser { PaymentId = payment.Id, ProfileId = userWallet.Id, Date = DateTime.Now };
+            Profile SystemWallet = await GetAsync(SystemWalletId);
+            SystemWallet.Points += payment.Price;
+            userWallet.Points += payment.Points;
+
+            await UpdateAsync(SystemWallet);
+            await UpdateAsync(userWallet);
+            _BookieDBContext.PaymentUsers.Add(pu);
+            await _BookieDBContext.SaveChangesAsync();
+        }
     }
 }

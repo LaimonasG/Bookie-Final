@@ -10,8 +10,6 @@
 
         public DateTime Date { get; set; }
 
-        public ICollection<Answer> Answers { get; set; }
-
         public ICollection<DailyQuestionProfile> DailyQuestionProfiles { get; set; }
 
     }

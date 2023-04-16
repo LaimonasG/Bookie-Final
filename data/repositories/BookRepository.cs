@@ -22,6 +22,9 @@ namespace Bakalauras.data.repositories
         Task<IReadOnlyList<Book>> GetUserBooksAsync(string userId);
 
         Task<IReadOnlyList<SubscribeToBookDto>> GetUserSubscribedBooksAsync(Profile profile);
+        //Task<List<Book>> GetFinishedBooks(string genreName);
+
+        //Task<List<Book>> GetUnFinishedBooks(string genreName);
     }
 
     public class BookRepository : IBookRepository
@@ -91,7 +94,14 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
-       
+        //public async Task<List<Book>> GetFinishedBooks(string genreName)
+        //{
+        //    return await _BookieDBContext.Books.Where(x=>x.IsFinished==1 && x.GenreName==genreName).ToListAsync();
+        //}
 
+        //public async Task<List<Book>> GetUnFinishedBooks(string genreName)
+        //{
+        //    return await _BookieDBContext.Books.Where(x => x.IsFinished == 0 && x.GenreName == genreName).ToListAsync();
+        //}
     }
 }

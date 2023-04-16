@@ -10,5 +10,7 @@ namespace Bakalauras.data.entities
         [AllowNull]
         public int TextId { get; set; }
         public Text Text { get; set; }
+
+        public DateTime? BoughtDate { get; set; }
     }
 }

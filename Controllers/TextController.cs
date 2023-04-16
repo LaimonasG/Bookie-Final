@@ -100,11 +100,14 @@ namespace Bakalauras.Controllers
             var text = await _Textrepostory.GetAsync(textId);
             var user = await _UserManager.FindByIdAsync(JwtRegisteredClaimNames.Sub);
             var profile = await _ProfileRepository.GetAsync(user.Id);
-            if (profile == null) return NotFound();
-            if (text == null) return NotFound();
             var authorProfile = await _ProfileRepository.GetAsync((
                                 await _UserManager.FindByIdAsync((
                                 await _Textrepostory.GetAsync(textId)).UserId)).Id);
+
+            //laikini tikrinimai
+            if (profile == null) return NotFound();
+            if (text == null) return NotFound();
+    
             ProfileText prte = new ProfileText { TextId = textId, ProfileId = profile.Id };
 
             if (profile.ProfileTexts == null) { profile.ProfileTexts = new List<ProfileText>(); }
@@ -122,20 +125,21 @@ namespace Bakalauras.Controllers
             {
                 profile.Points -= text.Price;
                 authorProfile.Points += text.Price;
-                Tuple<int, DateTime> newDate = new Tuple<int, DateTime>(textId, DateTime.Now);
-                StringBuilder temp = new StringBuilder();
-                temp.Append(profile.TextPurchaseDates);
-                temp.Append(_ProfileRepository.ConvertToStringTextDate(newDate));
-                temp.Append(';');
-                profile.TextPurchaseDates = temp.ToString();
+                //
+                // ar reikia saugot tas datas visgi?>?
+                //
+              //  Tuple<int, DateTime> newDate = new Tuple<int, DateTime>(textId, DateTime.Now);
+              //  StringBuilder temp = new StringBuilder();
+              //  temp.Append(profile.TextPurchaseDates);
+              //  temp.Append(_ProfileRepository.ConvertToStringTextDate(newDate));
+              //  temp.Append(';');
+              //  profile.TextPurchaseDates = temp.ToString();
             }
-
-            profile.ProfileTexts.Add(prte);
-            text.ProfileTexts.Add(prte);
+            prte.BoughtDate = DateTime.Now;
 
             await _ProfileRepository.UpdateAsync(profile);
             await _ProfileRepository.UpdateAsync(authorProfile);
-            await _Textrepostory.UpdateAsync(text);
+            await _Textrepostory.CreateProfileTextAsync(prte);
 
             List<Text> texts = (List<Text>)await _Textrepostory.GetUserTextsAsync(user.Id);
 
