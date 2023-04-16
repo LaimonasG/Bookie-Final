@@ -107,17 +107,14 @@ namespace Bakalauras.Controllers
             //laikini tikrinimai
             if (profile == null) return NotFound();
             if (text == null) return NotFound();
-    
+               
             ProfileText prte = new ProfileText { TextId = textId, ProfileId = profile.Id };
-
-            if (profile.ProfileTexts == null) { profile.ProfileTexts = new List<ProfileText>(); }
-            if (text.ProfileTexts == null) { text.ProfileTexts = new List<ProfileText>(); }
 
             if (profile.Points < text.Price)
             {
                 return BadRequest("Insufficient points.");
             }
-            else if(profile.ProfileTexts.Contains(prte) || text.ProfileTexts.Contains(prte))
+            else if(await _Textrepostory.WasTextBought(text))
             {
                 return BadRequest("User already owns the text.");
             }
