@@ -16,4 +16,12 @@ namespace Bakalauras.data.dtos
     public record ProfilePurchacesDto(List<Tuple<int, int>> BookPayments, List<Tuple<int, int>> TextPayments);
 
     public record ProfileBookPaymentDto(int bookId, double paymentAmount);
+
+    public record ProfileWriterSalesData(List<BookSalesData> bookData, List<TextSalesData> textData);
+
+    public record BookSalesData(string BookName, double BookPrice, int SalesAmount, List<DateTime?> BoughtDates,
+        int CurrSubscribedAmount);
+
+    public record TextSalesData(string TextName, double TextPrice, int SalesAmount, List<DateTime?> BoughtDate);
+
 }

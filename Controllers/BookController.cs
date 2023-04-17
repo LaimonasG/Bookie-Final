@@ -12,29 +12,26 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Bakalauras.data;
 
-namespace Bakalauras.controllers
+namespace Bakalauras.Controllers
 {
 
     [ApiController]
     [Route("api/genres/{GenreName}/books")]
-    public class BooksController : ControllerBase
+    public class BookController : ControllerBase
     {
         private readonly IBookRepository _BookRepository;
         private readonly IAuthorizationService _AuthorizationService;
         private readonly UserManager<BookieUser> _UserManager;
         private readonly IProfileRepository _ProfileRepository;
-        private readonly BookieDBContext _BookieDBContext;
         private readonly IChaptersRepository _ChaptersRepository;
 
-        public BooksController(IBookRepository repo, IAuthorizationService authServise,
-            UserManager<BookieUser> userManager, IProfileRepository profileRepository, BookieDBContext con,
-            IChaptersRepository repp)
+        public BookController(IBookRepository repo, IAuthorizationService authServise,
+            UserManager<BookieUser> userManager, IProfileRepository profileRepository,IChaptersRepository repp)
         {
             _BookRepository = repo;
             _AuthorizationService = authServise;
             _UserManager = userManager;
             _ProfileRepository = profileRepository;
-            _BookieDBContext = con;
             _ChaptersRepository= repp;
         }
         [HttpGet]
@@ -81,7 +78,7 @@ namespace Bakalauras.controllers
         [HttpPut]
         [Route("{bookId}")]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<BookDto>> Update(int bookId, UpdateBookDto updateBookDto)
+        public async Task<ActionResult<BookDto>> UpdateAsync(int bookId, UpdateBookDto updateBookDto)
         {
             var book = await _BookRepository.GetAsync(bookId);
             if (book == null) return NotFound();
@@ -130,7 +127,7 @@ namespace Bakalauras.controllers
             if (book == null) return NotFound();
             ProfileBook prbo = new ProfileBook { BookId = bookId, ProfileId = profile.Id,BoughtChapterList="" };
 
-            if (profile.ProfileBooks == null) { profile.ProfileBooks = new List<ProfileBook>(); }
+          //  if (profile.ProfileBooks == null) { profile.ProfileBooks = new List<ProfileBook>(); }
 
             if (_ProfileRepository.WasBookSubscribed(prbo, profile))
             {
@@ -220,12 +217,8 @@ namespace Bakalauras.controllers
             var authorProfile = await _ProfileRepository.GetAsync((
                                 await _UserManager.FindByIdAsync((
                                 await _BookRepository.GetAsync(bookId)).UserId)).Id);
-            //laikini tikrinimai
-            if (profile == null) return NotFound();
-            if (book == null) return NotFound();
-            if (authorProfile == null) return NotFound();
-            if (book.IsFinished == 0) return BadRequest("Knyga dar nebaigta");
 
+            if (book.IsFinished == 0) return BadRequest("Knyga dar nebaigta");
 
             if (!_ProfileRepository.HasEnoughPoints(profile.Points, book.BookPrice))
             {

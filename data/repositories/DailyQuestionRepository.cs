@@ -17,7 +17,7 @@ namespace Bakalauras.data.repositories
         Task<DailyQuestion?> GetAsync(int id);
         Task<IReadOnlyList<DailyQuestion>> GetManyAsync();
         Task UpdateAsync(DailyQuestion question);
-        Task<Answer> AnswerQuestion(int questionId, int answerId, string userId);
+        Task<AnswerDto> AnswerQuestion(int questionId, int answerId, string userId);
         Task<Answer> GetCorrectAsnwer(DailyQuestion question);
         List<Answer> UpdateAnswers(List<AnswerDto> answers, int questionId);
     }
@@ -75,7 +75,7 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
-        public async Task<Answer> AnswerQuestion(int questionId, int answerId, string userId)
+        public async Task<AnswerDto> AnswerQuestion(int questionId, int answerId, string userId)
         {
             var question = await GetAsync(questionId);
             if (question == null) { return null; }
@@ -98,8 +98,8 @@ namespace Bakalauras.data.repositories
             _BookieDBContext.Profiles.Update(userProfile);
 
             await _BookieDBContext.SaveChangesAsync();
-
-            return trueAnswer;
+            AnswerDto result = new AnswerDto(trueAnswer.Content, dqp.IsCorrect ? 1 : 0);
+            return result;
         }
 
         public async Task<Answer> GetCorrectAsnwer(DailyQuestion question)

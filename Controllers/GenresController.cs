@@ -5,7 +5,7 @@ using Bakalauras.data.entities;
 using Bakalauras.Auth.Model;
 using Bakalauras.data.repositories;
 
-namespace Bakalauras.controllers
+namespace Bakalauras.Controllers
 {
     [ApiController]
     [Route("api/genres")]

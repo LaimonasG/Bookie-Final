@@ -18,15 +18,10 @@ namespace Bakalauras.Controllers
     public class DailyQuestionController : ControllerBase
     {
         private readonly UserManager<BookieUser> _UserManager;
-        private readonly IProfileRepository _ProfileRepository;
-        private readonly IAuthorizationService _AuthorizationService;
         private readonly IDailyQuestionRepository _DailyQuestionRepository;
 
-        public DailyQuestionController(UserManager<BookieUser> userMng,IAuthorizationService authService,
-            IDailyQuestionRepository repd,IProfileRepository repp)
+        public DailyQuestionController(UserManager<BookieUser> userMng,IDailyQuestionRepository repd)
         {
-            _AuthorizationService = authService;
-            _ProfileRepository = repp;
             _DailyQuestionRepository = repd;
             _UserManager = userMng;
         }
@@ -59,21 +54,12 @@ namespace Bakalauras.Controllers
 
         [HttpPut]
         [Authorize(Roles = BookieRoles.BookieReader)]
-        public async Task<ActionResult<ProfileDto>> AnswerQuestion(AnswerQuestionDto dto)
+        public async Task<ActionResult<AnswerDto>> AnswerQuestion(AnswerQuestionDto dto)
         {
-            if (!ModelState.IsValid)
-            {
-                // Model validation failed, return an error message
-                var errors = ModelState.Values.SelectMany(v => v.Errors);
-                return BadRequest(errors);
-            }
-
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            Answer trueAnswer = await _DailyQuestionRepository.AnswerQuestion(dto.QuestionID,dto.AnswerID, user.Id);
+            AnswerDto result = await _DailyQuestionRepository.AnswerQuestion(dto.QuestionID,dto.AnswerID, user.Id);
 
-            if(trueAnswer==null) return NotFound();
-
-            return Ok(trueAnswer);
+            return Ok(result);
         }
     }
 }

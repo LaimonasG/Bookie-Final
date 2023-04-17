@@ -25,11 +25,14 @@ namespace Bakalauras.Controllers
         private readonly IProfileRepository _ProfileRepository;
         private readonly IAuthorizationService authorizationService;
 
-        public TextController(ITextRepository repo, IAuthorizationService authServise, IChaptersRepository chaptersRepository)
+        public TextController(ITextRepository repo, IAuthorizationService authServise, IChaptersRepository chaptersRepository,
+            UserManager<BookieUser> mng, IProfileRepository pre, IChaptersRepository chrep)
         {
             _Textrepostory = repo;
             authorizationService = authServise;
-            _ChaptersRepository = chaptersRepository;
+            _ProfileRepository = pre;
+            _UserManager = mng;
+            _ChaptersRepository = chrep;
         }
         [HttpGet]
         public async Task<IEnumerable<TextDto>> GetMany(string GenreName)
@@ -51,8 +54,8 @@ namespace Bakalauras.Controllers
         public async Task<CreateTextDto> Create([FromForm] IFormFile file, [FromForm] string textName, [FromForm] double price, string genreName)
         {
             string content = _ChaptersRepository.ExtractTextFromPDf(file);
-
-            Text text = new Text { Name = textName, GenreName=genreName, Content = content,Price=price, UserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub) };
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            Text text = new Text { Name = textName, GenreName=genreName, Content = content,Price=price, UserId = user.Id };
             await _Textrepostory.CreateAsync(text,genreName);
 
             return new CreateTextDto(textName,content,price);
@@ -93,21 +96,17 @@ namespace Bakalauras.Controllers
         }
 
         [HttpPut]
-        [Route("{textId}/subscribe")]
+        [Route("{textId}/buy")]
         [Authorize(Roles = BookieRoles.BookieReader)]
         public async Task<ActionResult<ProfileDto>> PurchaseText(int textId)
         {
             var text = await _Textrepostory.GetAsync(textId);
-            var user = await _UserManager.FindByIdAsync(JwtRegisteredClaimNames.Sub);
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
             var authorProfile = await _ProfileRepository.GetAsync((
                                 await _UserManager.FindByIdAsync((
                                 await _Textrepostory.GetAsync(textId)).UserId)).Id);
 
-            //laikini tikrinimai
-            if (profile == null) return NotFound();
-            if (text == null) return NotFound();
-               
             ProfileText prte = new ProfileText { TextId = textId, ProfileId = profile.Id };
 
             if (profile.Points < text.Price)
@@ -138,7 +137,7 @@ namespace Bakalauras.Controllers
             await _ProfileRepository.UpdateAsync(authorProfile);
             await _Textrepostory.CreateProfileTextAsync(prte);
 
-            List<Text> texts = (List<Text>)await _Textrepostory.GetUserTextsAsync(user.Id);
+            List<Text> texts = (List<Text>)await _Textrepostory.GetUserTextsAsync(profile);
 
             return Ok(new ProfileTextsDto(user.Id, user.UserName, texts));
         }

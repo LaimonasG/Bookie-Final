@@ -8,6 +8,7 @@ namespace Bakalauras.data.dtos
 
     public record AnswerDto(string content, int correct);
 
+
   //  public record AnswerQuestionDto(int QuestionID, int AnswerID);
 
     public class AnswerQuestionDto

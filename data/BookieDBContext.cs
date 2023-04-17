@@ -89,18 +89,18 @@ namespace Bakalauras.data
             modelBuilder.Entity<ProfileText>()
                 .HasKey(x => new { x.TextId, x.ProfileId });
 
-            modelBuilder.Entity<ProfileText>()
-                .HasOne(p => p.Text)
-                .WithMany(pu => pu.ProfileTexts)
-                .HasForeignKey(p => p.TextId);
+            //modelBuilder.Entity<ProfileText>()
+            //    .HasOne(p => p.Text)
+            //    .WithMany(pu => pu.ProfileTexts)
+            //    .HasForeignKey(p => p.TextId);
 
             modelBuilder.Entity<ProfileText>()
                 .HasOne(u => u.Profile)
                 .WithMany(pu => pu.ProfileTexts)
                 .HasForeignKey(u => u.ProfileId);
 
-            modelBuilder.Entity<ProfileBook>()
-      .HasKey(pb => new { pb.ProfileId, pb.BookId });
+      //      modelBuilder.Entity<ProfileBook>()
+      //.HasKey(pb => new { pb.ProfileId, pb.BookId });
 
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

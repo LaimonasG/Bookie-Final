@@ -14,7 +14,7 @@ namespace Bakalauras.data.repositories
         Task<Text?> GetAsync(int TextId);
         Task<IReadOnlyList<Text>> GetManyAsync(string genreName);
         Task UpdateAsync(Text Text);
-        Task<IReadOnlyList<Text>> GetUserTextsAsync(string userId);
+        Task<IReadOnlyList<Text>> GetUserTextsAsync(Profile profile);
         Task CreateProfileTextAsync(ProfileText pb);
         Task<bool> WasTextBought(Text text);
     }
@@ -45,9 +45,17 @@ namespace Bakalauras.data.repositories
             return await _BookieDBContext.Texts.Where(x => x.GenreName == genreName).ToListAsync();
         }
 
-        public async Task<IReadOnlyList<Text>> GetUserTextsAsync(string userId)
+        public async Task<IReadOnlyList<Text>> GetUserTextsAsync(Profile profile)
         {
-            return await _BookieDBContext.Texts.Where(x => x.UserId == userId).ToListAsync();
+            var profileTexts = await _BookieDBContext.ProfileTexts
+                         .Where(pt => pt.ProfileId == profile.Id)
+                         .Select(pt => pt.TextId)
+                         .ToListAsync();
+
+            var userTexts = await _BookieDBContext.Texts
+                         .Where(t => profileTexts.Contains(t.Id))
+                         .ToListAsync();
+            return userTexts;
         }
 
         public async Task UpdateAsync(Text Text)

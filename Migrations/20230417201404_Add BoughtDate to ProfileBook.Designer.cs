@@ -4,6 +4,7 @@ using Bakalauras.data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bakalauras.Migrations
 {
     [DbContext(typeof(BookieDBContext))]
-    partial class BookieDBContextModelSnapshot : ModelSnapshot
+    [Migration("20230417201404_Add BoughtDate to ProfileBook")]
+    partial class AddBoughtDatetoProfileBook
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -371,14 +373,11 @@ namespace Bakalauras.Migrations
 
             modelBuilder.Entity("Bakalauras.data.entities.ProfileBook", b =>
                 {
-                    b.Property<int>("BookId")
-                        .HasColumnType("int");
-
                     b.Property<int>("ProfileId")
                         .HasColumnType("int");
 
-                    b.Property<bool>("WasUnsubscribed")
-                        .HasColumnType("bit");
+                    b.Property<int>("BookId")
+                        .HasColumnType("int");
 
                     b.Property<string>("BoughtChapterList")
                         .HasColumnType("nvarchar(max)");
@@ -386,9 +385,12 @@ namespace Bakalauras.Migrations
                     b.Property<DateTime?>("BoughtDate")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("BookId", "ProfileId", "WasUnsubscribed");
+                    b.Property<bool>("WasUnsubscribed")
+                        .HasColumnType("bit");
 
-                    b.HasIndex("ProfileId");
+                    b.HasKey("ProfileId", "BookId");
+
+                    b.HasIndex("BookId");
 
                     b.ToTable("ProfileBooks");
                 });
@@ -701,7 +703,7 @@ namespace Bakalauras.Migrations
                         .IsRequired();
 
                     b.HasOne("Bakalauras.data.entities.Text", "Text")
-                        .WithMany()
+                        .WithMany("ProfileTexts")
                         .HasForeignKey("TextId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -809,6 +811,8 @@ namespace Bakalauras.Migrations
             modelBuilder.Entity("Bakalauras.data.entities.Text", b =>
                 {
                     b.Navigation("Comments");
+
+                    b.Navigation("ProfileTexts");
                 });
 #pragma warning restore 612, 618
         }

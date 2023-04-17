@@ -34,6 +34,7 @@ namespace Bakalauras.Controllers
             _BookRepository = repob;
         }
         [HttpGet]
+        [Route("all")]
         public async Task<IEnumerable<ProfileDto>> GetMany()
         {
             var profiles = await _ProfileRepository.GetManyAsync();
@@ -47,16 +48,85 @@ namespace Bakalauras.Controllers
         }
 
         [HttpGet]
-        [Route("{userId}")]
-        public async Task<ActionResult<ProfileDto>> Get(string userId)
+        public async Task<ActionResult<ProfileDto>> Get()
         {
-
-            var profile = await _ProfileRepository.GetAsync(userId);
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            var profile = await _ProfileRepository.GetAsync(user.Id);
             if (profile == null) return NotFound();
-            var user = await _UserManager.FindByIdAsync(userId);
 
             return new ProfileDto(user.Id, user.UserName, user.Email, profile.Points);
         }
+
+        [HttpGet]
+        [Route("picture")]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<ProfileDto>> GetProfilePicture()
+        {
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            var profile = await _ProfileRepository.GetAsync(user.Id);
+            if (profile == null) return NotFound();
+
+            if (profile.ProfilePicture == null) { return NotFound(); }
+
+            return Ok(File(profile.ProfilePicture, "image/png"));
+        }
+
+        [HttpGet]
+        [Route("paymentOffers")]
+        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<List<ProfileBookOffersDto>>> GetReaderPaymentOffers()
+        {
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            var profile = await _ProfileRepository.GetAsync(user.Id);
+            if (profile == null) return NotFound();
+
+            List<ProfileBookOffersDto> offersList = await _ProfileRepository.CalculateBookOffers(profile);
+
+            return Ok(offersList);
+        }
+
+        [HttpGet]
+        [Route("payForPoints")]
+        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<ProfilePurchacesDto>> GetPointsPaymentOffers()
+        {
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            var profile = await _ProfileRepository.GetAsync(user.Id);
+
+            if (profile == null) return NotFound();
+
+            return Ok(_ProfileRepository.GetProfilePurchases(profile));
+        }
+
+        [HttpGet]
+        [Route("sales")]
+        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<ProfileWriterSalesData>> GetWriterSales()
+        {
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            var profile = await _ProfileRepository.GetAsync(user.Id);
+
+            ProfileWriterSalesData result = new ProfileWriterSalesData
+                (
+                await _ProfileRepository.GetBookData(user.Id),
+                await _ProfileRepository.GetTextData(user.Id)
+                );
+
+            return Ok(result);
+        }
+
+        //[HttpGet]
+        //[Route("{userId}/payments")]
+        //[Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        //public async Task<ActionResult<ProfilePurchacesDto>> GetReaderPaymentHistory(string userId)
+        //{
+        //    var user = await _UserManager.FindByIdAsync(userId);
+        //    var profile = await _ProfileRepository.GetAsync(user.Id);
+
+        //    if (profile == null) return NotFound();
+
+        //    return Ok(_ProfileRepository.GetProfilePurchases(profile));
+        //}
 
         [HttpPut]
         [Route("{userId}")]
@@ -131,33 +201,7 @@ namespace Bakalauras.Controllers
             return Ok();
         }
 
-        [HttpGet]
-        [Route("{userId}/picture")]
-        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<ProfileDto>> GetProfilePicture()
-        {
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            var profile = await _ProfileRepository.GetAsync(user.Id);
-            if (profile == null) return NotFound();
-
-            if (profile.ProfilePicture == null){ return NotFound(); }
-
-            return Ok(File(profile.ProfilePicture, "image/png"));
-        }
-
-        [HttpGet]
-        [Route("{userId}/paymentOffers")]
-        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<List<ProfileBookOffersDto>>> GetReaderPaymentOffers()
-        {
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            var profile = await _ProfileRepository.GetAsync(user.Id);
-            if (profile == null) return NotFound();
-
-            List<ProfileBookOffersDto> offersList= await _ProfileRepository.CalculateBookOffers(profile);
-            
-            return Ok(offersList);
-        }
+        
 
         [HttpPut]
         [Route("{userId}/pay")]
@@ -203,18 +247,7 @@ namespace Bakalauras.Controllers
         }
 
 
-        [HttpGet]
-        [Route("{userId}/payForPoints")]
-        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<ProfilePurchacesDto>> GetPointsPaymentOffers()
-        {
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            var profile = await _ProfileRepository.GetAsync(user.Id);
-
-            if (profile == null) return NotFound();
-
-            return Ok(_ProfileRepository.GetProfilePurchases(profile));
-        }
+        
 
         [HttpPut]
         [Route("payForPoints/{PaymentId}")]
@@ -237,22 +270,6 @@ namespace Bakalauras.Controllers
             }
 
             return BadRequest("Bank did not approve payment");
-
         }
-
-
-        //[HttpGet]
-        //[Route("{userId}/payments")]
-        //[Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        //public async Task<ActionResult<ProfilePurchacesDto>> GetReaderPaymentHistory(string userId)
-        //{
-        //    var user = await _UserManager.FindByIdAsync(userId);
-        //    var profile = await _ProfileRepository.GetAsync(user.Id);
-
-        //    if (profile == null) return NotFound();
-
-        //    return Ok(_ProfileRepository.GetProfilePurchases(profile));
-        //}
-
     }
 }

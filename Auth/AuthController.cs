@@ -7,7 +7,7 @@ using Bakalauras.data.repositories;
 using Bakalauras.data;
 using Bakalauras.data.entities;
 
-namespace Bookie.controllers
+namespace Bakalauras.Controllers
 {
     [ApiController]
     [AllowAnonymous]
