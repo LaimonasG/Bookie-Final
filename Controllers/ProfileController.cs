@@ -258,8 +258,12 @@ namespace Bakalauras.Controllers
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<IEnumerable<TextDtoToBuy>> GetManyUsertexts(string GenreName)
         {
-            var texts = await _Textrepostory.GetManyAsync(GenreName);
-            return texts.Select(x => new TextDtoToBuy(x.Id, x.Name, x.GenreName, x.Price, DateTime.Now, x.UserId)).Where(y => y.GenreName == GenreName);
+            //need to implement
+
+            //var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            //var books = await _BookRepository.GetUserBooksAsync(user.Id);
+
+            //return Ok(await _BookRepository.ConvertBooksToBookDtoBoughtList(books));
         }
 
         [HttpGet]
