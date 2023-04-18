@@ -49,21 +49,23 @@ namespace Bakalauras.Controllers
 
         [HttpPost]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<CommentDto>> Create(CreateCommentDto createCommentDto, int bookId,string genreName)
+        public async Task<ActionResult<CommentDto>> Create(CreateCommentDto createCommentDto, int bookId)
         {
-            var user = _UserManager.GetUserName(User);
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            if (user.isBlocked)
+            {
+                return BadRequest("Komentavimas uždraustas, naudotojas užblokuotas");
+            }
+
             var comment = new Comment
             {
                 EntityType=_Type,
                 Content = createCommentDto.Content,
                 Date = DateTime.Now,
-                Username = user,
+                Username = user.UserName,
                 UserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
             };
 
-            //laikinas
-            var book = await _BookRepository.GetAsync(bookId);
-            if (book == null) return NotFound();
 
             await _CommentRepository.CreateAsync(comment, bookId,_Type);
 

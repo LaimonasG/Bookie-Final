@@ -25,14 +25,16 @@ namespace Bakalauras.Controllers
             _DailyQuestionRepository = repd;
             _UserManager = userMng;
         }
-        [HttpGet]
-        [Route("/all")]
-        public async Task<IEnumerable<DailyQuestion>> GetMany()
-        {
-            return await _DailyQuestionRepository.GetManyAsync();
-        }
+        //[HttpGet]
+        //[Route("/all")]
+        //[Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        //public async Task<IEnumerable<DailyQuestion>> GetMany()
+        //{
+        //    return await _DailyQuestionRepository.GetManyAsync();
+        //}
 
-        [HttpGet]   
+        [HttpGet]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<ActionResult<DailyQuestion>> Get()
         {
             var question = await _DailyQuestionRepository.GetRandomAsync();
@@ -40,20 +42,20 @@ namespace Bakalauras.Controllers
             return question;
         }
 
-        [HttpPost]
-        public async Task<DailyQuestionDto> Create(CreateQuestionDto dto)
-        {
-            DailyQuestion q = new DailyQuestion { Question = dto.Question, Points = dto.Points };
-            int questionId= await _DailyQuestionRepository.CreateQuestion(q);
-            var answers = _DailyQuestionRepository.UpdateAnswers(dto.Answers,questionId);
+        //[HttpPost]
+        //public async Task<DailyQuestionDto> Create(CreateQuestionDto dto)
+        //{
+        //    DailyQuestion q = new DailyQuestion { Question = dto.Question, Points = dto.Points };
+        //    int questionId= await _DailyQuestionRepository.CreateQuestion(q);
+        //    var answers = _DailyQuestionRepository.UpdateAnswers(dto.Answers,questionId);
 
-           await _DailyQuestionRepository.CreateAnswers(answers);
+        //   await _DailyQuestionRepository.CreateAnswers(answers);
 
-            return new DailyQuestionDto(q.Question, q.Points, answers);
-        }
+        //    return new DailyQuestionDto(q.Question, q.Points, answers);
+        //}
 
         [HttpPut]
-        [Authorize(Roles = BookieRoles.BookieReader)]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<ActionResult<AnswerDto>> AnswerQuestion(AnswerQuestionDto dto)
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));

@@ -35,27 +35,28 @@ namespace Bakalauras.Controllers
             _ChaptersRepository= repp;
         }
         [HttpGet]
-        public async Task<IEnumerable<BookDto>> GetMany(string GenreName)
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<IEnumerable<BookDtoToBuy>> GetMany(string GenreName)
         {
             var books = await _BookRepository.GetManyAsync();
-            return books.Select(x => new BookDto(x.Id, x.Name, x.GenreName, x.Description, x.ChapterPrice, DateTime.Now,
+            return books.Select(x => new BookDtoToBuy(x.Id, x.Name, x.GenreName, x.Description, x.ChapterPrice, DateTime.Now,
                 x.UserId)).Where(y => y.GenreName == GenreName);
         }
 
         [HttpGet]
         [Route("{bookId}")]
-        public async Task<ActionResult<BookDto>> Get(int bookId)
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<BookDtoToBuy>> Get(int bookId)
         {
             var book = await _BookRepository.GetAsync(bookId);
             if (book == null) return NotFound();
-            return new BookDto(book.Id, book.Name, book.GenreName, book.Description, book.ChapterPrice, book.Created,
+            return new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.ChapterPrice, book.Created,
                 book.UserId);
         }
 
-
         [HttpPost]
-        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<BookDto>> Create(CreateBookDto createBookDto, string GenreName)
+        [Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<BookDtoToBuy>> Create(CreateBookDto createBookDto, string GenreName)
         {
             var book = new Book
             {
@@ -70,15 +71,14 @@ namespace Bakalauras.Controllers
 
             await _BookRepository.CreateAsync(book, GenreName);
 
-            //201
-            return Created("201", new BookDto(book.Id, book.Name, book.GenreName, book.Description, book.ChapterPrice,
+            return Created("201", new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.ChapterPrice,
                 book.Created, book.UserId));
         }
 
         [HttpPut]
         [Route("{bookId}")]
-        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<BookDto>> UpdateAsync(int bookId, UpdateBookDto updateBookDto)
+        [Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<BookDtoToBuy>> UpdateAsync(int bookId, UpdateBookDto updateBookDto)
         {
             var book = await _BookRepository.GetAsync(bookId);
             if (book == null) return NotFound();
@@ -95,25 +95,25 @@ namespace Bakalauras.Controllers
 
             await _BookRepository.UpdateAsync(book);
 
-            return Ok(new BookDto(book.Id, book.Name, book.GenreName, book.Description, book.ChapterPrice, book.Created,
+            return Ok(new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.ChapterPrice, book.Created,
                 book.UserId));
         }
 
-        [HttpDelete]
-        [Route("{bookId}")]
-        public async Task<ActionResult> Remove(int bookId)
-        {
-            var book = await _BookRepository.GetAsync(bookId);
-            if (book == null) return NotFound();
-            await _BookRepository.DeleteAsync(book);
+        //[HttpDelete]
+        //[Route("{bookId}")]
+        //public async Task<ActionResult> Remove(int bookId)
+        //{
+        //    var book = await _BookRepository.GetAsync(bookId);
+        //    if (book == null) return NotFound();
+        //    await _BookRepository.DeleteAsync(book);
 
-            //204
-            return NoContent();
-        }
+        //    //204
+        //    return NoContent();
+        //}
 
         [HttpPut]
         [Route("{bookId}/subscribe")]
-        [Authorize(Roles = BookieRoles.BookieReader)]
+        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
         public async Task<ActionResult<ProfileDto>> SubscribeToBook(int bookId)
         {
             var book = await _BookRepository.GetAsync(bookId);
@@ -122,9 +122,7 @@ namespace Bakalauras.Controllers
             var authorProfile = await _ProfileRepository.GetAsync((
                                 await _UserManager.FindByIdAsync((
                                 await _BookRepository.GetAsync(bookId)).UserId)).Id);
-            //laikini tikrinimai
-            if (profile == null) return NotFound();
-            if (book == null) return NotFound();
+
             ProfileBook prbo = new ProfileBook { BookId = bookId, ProfileId = profile.Id,BoughtChapterList="" };
 
           //  if (profile.ProfileBooks == null) { profile.ProfileBooks = new List<ProfileBook>(); }
@@ -182,15 +180,11 @@ namespace Bakalauras.Controllers
 
         [HttpPut]
         [Route("{bookId}/unsubscribe")]
-        [Authorize(Roles = BookieRoles.BookieReader)]
+        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
         public async Task<ActionResult<ProfileDto>> UnSubscribeToBook(int bookId)
         {
-            var book = await _BookRepository.GetAsync(bookId);
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
-            //laikini tikrinimai
-            if (profile == null) return NotFound();
-            if (book == null) return NotFound();
 
             ProfileBook prbo =await _ProfileRepository.GetProfileBookRecordSubscribed(bookId, profile.Id);
 
@@ -208,7 +202,7 @@ namespace Bakalauras.Controllers
 
         [HttpPut]
         [Route("{bookId}/buy")]
-        [Authorize(Roles = BookieRoles.BookieReader)]
+        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
         public async Task<ActionResult<ProfileDto>> BuyBook(int bookId)
         {
             var book = await _BookRepository.GetAsync(bookId);

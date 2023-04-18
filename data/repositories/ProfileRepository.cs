@@ -55,11 +55,6 @@ namespace Bakalauras.data.repositories
         Task PayForPoints(Profile userWallet, Payment payment);
 
         Task<Payment> GetPayment(int paymentId);
-
-        Task<List<BookSalesData>> GetBookData(string userId);
-
-        Task<List<TextSalesData>> GetTextData(string userId);
-
     }
     public class ProfileRepository : IProfileRepository
     {
@@ -365,44 +360,6 @@ namespace Bakalauras.data.repositories
             await UpdateAsync(userWallet);
             _BookieDBContext.PaymentUsers.Add(pu);
             await _BookieDBContext.SaveChangesAsync();
-        }
-
-        public async Task<List<BookSalesData>> GetBookData(string userId)
-        {
-            var profile = await GetAsync(userId);
-            var books = await _BookieDBContext.Books.Where(x => x.UserId == userId).ToListAsync();
-            var bookIds=books.Select(x=>x.Id).ToList();
-            var profileBooks= await _BookieDBContext.ProfileBooks.Where(pb => bookIds.Contains(pb.BookId)).ToListAsync();
-            List<BookSalesData> result = new List<BookSalesData>();
-            foreach(var book in books){
-                BookSalesData temp = new BookSalesData(
-                     book.Name,
-                     book.BookPrice,
-                     profileBooks.Count(x => x.BookId == book.Id),
-                     profileBooks.Where(x => x.BookId == book.Id).Select(y => y.BoughtDate).ToList(),
-                    profileBooks.Count(x => x.BookId==book.Id && x.WasUnsubscribed==false));
-                result.Add(temp);
-            }
-            return result;
-        }
-
-        public async Task<List<TextSalesData>> GetTextData(string userId)
-        {
-            var profile = await GetAsync(userId);
-            var texts = await _BookieDBContext.Texts.Where(x => x.UserId == userId).ToListAsync();
-            var textIds = texts.Select(x => x.Id).ToList();
-            var profileTexts = await _BookieDBContext.ProfileTexts.Where(pb => textIds.Contains(pb.TextId)).ToListAsync();
-            List<TextSalesData> result = new List<TextSalesData>();
-            foreach (var text in texts)
-            {
-                TextSalesData temp = new TextSalesData(
-                     text.Name,
-                     text.Price,
-                     profileTexts.Count(x => x.TextId == text.Id),
-                     profileTexts.Where(x => x.TextId == text.Id).Select(y => y.BoughtDate).ToList());
-                result.Add(temp);
-            }
-            return result;
         }
     }
 }

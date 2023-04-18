@@ -49,6 +49,8 @@ builder.Services.AddTransient<IChaptersRepository, ChaptersRepository>();
 builder.Services.AddTransient<ITextRepository, TextsRepository>();
 builder.Services.AddTransient<IProfileRepository, ProfileRepository>();
 builder.Services.AddTransient<IDailyQuestionRepository, DailyQuestionRepository>();
+builder.Services.AddTransient<IWriterPlatformRepository, WriterPlatformRepository>();
+builder.Services.AddTransient<IAdminRepository, AdminRepository>();
 builder.Services.AddTransient<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<AuthDbSeeder>();
 

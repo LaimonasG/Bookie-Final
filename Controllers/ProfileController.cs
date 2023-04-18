@@ -24,30 +24,35 @@ namespace Bakalauras.Controllers
         private readonly IBookRepository _BookRepository;
         private readonly IAuthorizationService _AuthorizationService;
         private readonly UserManager<BookieUser> _UserManager;
+        private readonly IChaptersRepository _ChaptersRepository;
+        private readonly ITextRepository _Textrepostory;
 
         public ProfileController(IProfileRepository repo, IAuthorizationService authService,
-            UserManager<BookieUser> userManager,IBookRepository repob)
+            UserManager<BookieUser> userManager,IBookRepository repob,IChaptersRepository chrep,
+            IChaptersRepository chrep)
         {
             _ProfileRepository = repo;
             _AuthorizationService = authService;
             _UserManager = userManager;
             _BookRepository = repob;
+            _ChaptersRepository = chrep;
         }
+        //[HttpGet]
+        //[Route("all")]
+        //public async Task<IEnumerable<ProfileDto>> GetMany()
+        //{
+        //    var profiles = await _ProfileRepository.GetManyAsync();
+
+        //    var usersAndProfiles = from profile in profiles
+        //                           join user in _UserManager.Users
+        //                           on profile.UserId equals user.Id
+        //                           select new { User = user, Profile = profile };
+
+        //    return usersAndProfiles.Select(x => new ProfileDto(x.User.Id,x.User.UserName,x.User.Email,x.Profile.Points));
+        //}
+
         [HttpGet]
-        [Route("all")]
-        public async Task<IEnumerable<ProfileDto>> GetMany()
-        {
-            var profiles = await _ProfileRepository.GetManyAsync();
-
-            var usersAndProfiles = from profile in profiles
-                                   join user in _UserManager.Users
-                                   on profile.UserId equals user.Id
-                                   select new { User = user, Profile = profile };
-
-            return usersAndProfiles.Select(x => new ProfileDto(x.User.Id,x.User.UserName,x.User.Email,x.Profile.Points));
-        }
-
-        [HttpGet]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<ActionResult<ProfileDto>> Get()
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
@@ -98,23 +103,6 @@ namespace Bakalauras.Controllers
             return Ok(_ProfileRepository.GetProfilePurchases(profile));
         }
 
-        [HttpGet]
-        [Route("sales")]
-        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<ProfileWriterSalesData>> GetWriterSales()
-        {
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            var profile = await _ProfileRepository.GetAsync(user.Id);
-
-            ProfileWriterSalesData result = new ProfileWriterSalesData
-                (
-                await _ProfileRepository.GetBookData(user.Id),
-                await _ProfileRepository.GetTextData(user.Id)
-                );
-
-            return Ok(result);
-        }
-
         //[HttpGet]
         //[Route("{userId}/payments")]
         //[Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
@@ -131,7 +119,7 @@ namespace Bakalauras.Controllers
         [HttpPut]
         [Route("{userId}")]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<BookDto>> UpdatePoints(UpdateProfilePointsDto dto,string userId)
+        public async Task<ActionResult<ProfileDto>> UpdatePoints(UpdateProfilePointsDto dto,string userId)
         {
             var profile = await _ProfileRepository.GetAsync(userId);
             if (profile == null) return NotFound();
@@ -153,7 +141,7 @@ namespace Bakalauras.Controllers
         [HttpPut]
         [Route("info/{userId}")]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<BookDto>> UpdatePersonalInfo(PersonalInfoDto dto)
+        public async Task<ActionResult<PersonalInfoDto>> UpdatePersonalInfo(PersonalInfoDto dto)
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
@@ -182,7 +170,7 @@ namespace Bakalauras.Controllers
 
             if (file.ContentType != "image/jpeg" && file.ContentType != "image/png")
             {
-                return BadRequest("Only JPEG and PNG images are allowed.");
+                return BadRequest("Leistini tik PNG ir JPG formato paveikslėliai.");
             }
 
             byte[] fileBytes;
@@ -197,12 +185,9 @@ namespace Bakalauras.Controllers
 
             await _ProfileRepository.UpdateAsync(profile);
 
-
             return Ok();
         }
-
-        
-
+   
         [HttpPut]
         [Route("{userId}/pay")]
         [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
@@ -222,7 +207,7 @@ namespace Bakalauras.Controllers
             var bookPeriodPoints = book.ChapterPrice * profileOffer.MissingChapters.Count;
             if (profile.Points < bookPeriodPoints)
             {
-                return BadRequest("Insufficient points.");
+                return BadRequest("Nepakanka taškų atlikti šį veiksmą.");
             }
      
                 profile.Points -= bookPeriodPoints;
@@ -246,9 +231,6 @@ namespace Bakalauras.Controllers
             return Ok(new ProfileBookPaymentDto(dto.bookId,bookPeriodPoints));
         }
 
-
-        
-
         [HttpPut]
         [Route("payForPoints/{PaymentId}")]
         [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
@@ -269,7 +251,52 @@ namespace Bakalauras.Controllers
                 return Ok();
             }
 
-            return BadRequest("Bank did not approve payment");
+            return BadRequest("Įvyko banko klaida, bandykite iš naujo.");
+        }
+
+        [HttpGet]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<IEnumerable<TextDtoToBuy>> GetManyUsertexts(string GenreName)
+        {
+            var texts = await _Textrepostory.GetManyAsync(GenreName);
+            return texts.Select(x => new TextDtoToBuy(x.Id, x.Name, x.GenreName, x.Price, DateTime.Now, x.UserId)).Where(y => y.GenreName == GenreName);
+        }
+
+        [HttpGet]
+        [Route("{textId}")]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<TextDtoBought>> GetUserText(int textId)
+        {
+            var text=await _Textrepostory.GetAsync(textId);
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            bool hasText=await _Textrepostory.CheckIfUserHasText(user.Id, textId);
+            if (!hasText) return BadRequest("Naudotojas neturi prieigos prie šio teksto.");
+            return new TextDtoBought(text.Id, text.Name, text.GenreName,text.Content, text.Price, text.Created, text.UserId);
+        }
+
+        [HttpGet]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<List<BookDtoBought>>> GetManyUserBooks()
+        {
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            var books = await _BookRepository.GetUserBooksAsync(user.Id);
+            
+            return Ok(await _BookRepository.ConvertBooksToBookDtoBoughtList(books));
+        }
+
+        [HttpGet]
+        [Route("{bookId}")]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<BookDtoBought>> GetUserBook(int bookId)
+        {
+            var book = await _BookRepository.GetAsync(bookId);
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            bool hasBook=await _BookRepository.CheckIfUserHasBook(user.Id, bookId);
+            if (!hasBook) return BadRequest("Naudotojas neturi prieigos prie šios knygos.");
+
+            var chapters=await _ChaptersRepository.GetManyAsync(bookId);
+            return new BookDtoBought(book.Id, book.Name, (ICollection<Chapter>?)chapters, book.GenreName, book.Description,
+                book.ChapterPrice, book.Created, book.UserId);
         }
     }
 }

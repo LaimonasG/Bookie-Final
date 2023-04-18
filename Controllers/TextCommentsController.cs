@@ -30,6 +30,7 @@ namespace Bakalauras.Controllers
             _TextRepository = textRepository;
         }
         [HttpGet]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<IEnumerable<CommentDto>> GetMany(int textId)
         {
             var comments = await _CommentRepository.GetManyAsync(textId, _Type);
@@ -38,6 +39,7 @@ namespace Bakalauras.Controllers
 
         [HttpGet]
         [Route("{commentId}")]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<ActionResult<CommentDto>> Get(int textId, int commentId)
         {
             var comment = await _CommentRepository.GetAsync(commentId, textId, _Type);
@@ -50,13 +52,17 @@ namespace Bakalauras.Controllers
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<ActionResult<CommentDto>> Create(CreateCommentDto createCommentDto, int textId, string genreName)
         {
-            var user = _UserManager.GetUserName(User);
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            if (user.isBlocked)
+            {
+                return BadRequest("Komentavimas uždraustas, naudotojas užblokuotas");
+            }
             var comment = new Comment
             {
                 EntityType = _Type,
                 Content = createCommentDto.Content,
                 Date = DateTime.Now,
-                Username = user,
+                Username = user.UserName,
                 UserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
             };
 
@@ -89,16 +95,16 @@ namespace Bakalauras.Controllers
             return Ok(new CommentDto(comment.Id, comment.EntityId, _Type, DateTime.Now, comment.Content, comment.UserId, comment.Username));
         }
 
-        [HttpDelete]
-        [Route("{commentId}")]
-        public async Task<ActionResult> Remove(int commentId, int textId)
-        {
-            var comment = await _CommentRepository.GetAsync(commentId, textId, _Type);
-            if (comment == null) return NotFound();
-            await _CommentRepository.DeleteAsync(comment);
+        //[HttpDelete]
+        //[Route("{commentId}")]
+        //public async Task<ActionResult> Remove(int commentId, int textId)
+        //{
+        //    var comment = await _CommentRepository.GetAsync(commentId, textId, _Type);
+        //    if (comment == null) return NotFound();
+        //    await _CommentRepository.DeleteAsync(comment);
 
-            //204
-            return NoContent();
-        }
+        //    //204
+        //    return NoContent();
+        //}
     }
 }

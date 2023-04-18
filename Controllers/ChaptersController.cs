@@ -31,53 +31,91 @@ namespace Bakalauras.Controllers
         private readonly UserManager<BookieUser> _UserManager;
         private readonly IAuthorizationService _AuthorizationService;
         private readonly IBookRepository _BookRepository;
+        private readonly IProfileRepository _ProfileRepository;
         public ChaptersController(IChaptersRepository repo, IAuthorizationService authService,
-            UserManager<BookieUser> userManager,IBookRepository rep)
+            UserManager<BookieUser> userManager, IBookRepository bookRepository, IProfileRepository profileRepository)
         {
             _ChapterRepository = repo;
             _AuthorizationService = authService;
             _UserManager = userManager;
-            _BookRepository = rep;
+            _BookRepository = bookRepository;
+            _ProfileRepository = profileRepository;
         }
 
         [HttpPost]
-        public async Task<CreateChapterDto> Create([FromForm]IFormFile file, [FromForm]string chapterName, int bookId)
+        [Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<CreateChapterDto>> Create([FromForm]IFormFile file, [FromForm]string chapterName, [FromForm] string isFinished, int bookId)
         {
             string content = _ChapterRepository.ExtractTextFromPDf(file);
+            var book=await _BookRepository.GetAsync(bookId);
+            var authRez = await _AuthorizationService.AuthorizeAsync(User, book, PolicyNames.ResourceOwner);
+
+            if (!authRez.Succeeded)
+            {
+                return Forbid();
+            }
+
+            if (content == "error")
+            {
+                return BadRequest("Failo formatas netinkamas, galima įkelti tik PDF tipo failus.");
+            }
 
             Chapter chapter= new Chapter { Name=chapterName, BookId=bookId,Content= content,UserId= User.FindFirstValue(JwtRegisteredClaimNames.Sub) };
-            await _ChapterRepository.CreateAsync(chapter, 0);
+            await _ChapterRepository.CreateAsync(chapter, int.Parse(isFinished));
 
             return new CreateChapterDto(chapterName, content);
         }
 
         [HttpGet]
         [Route("{chapterId}")]
+        [Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
         public async Task<ActionResult<GetChapterDto>> GetOneChapter(int bookId,int chapterId)
         {
             var chapter = await _ChapterRepository.GetAsync(bookId, chapterId);
+
+            var authRez = await _AuthorizationService.AuthorizeAsync(User, chapter, PolicyNames.ResourceOwner);
+
+            if (!authRez.Succeeded)
+            {
+                return Forbid();
+            }
             if (chapter == null) return NotFound();
             return new GetChapterDto(chapter.Id,chapter.Name,chapter.Content,bookId);
         }
 
         [HttpGet]
-        public async Task<IEnumerable<GetChapterDto>> GetAllChapters(int bookId)
+        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<IEnumerable<GetChapterDto>>> GetAllChapters(int bookId)
         {
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            var hasBook = await _BookRepository.CheckIfUserHasBook(user.Id, bookId);
+            if (!hasBook)
+            {
+                return BadRequest("Naudotojas neturi prieigos prie šių skyrių.");
+            }
+
             var chapters = await _ChapterRepository.GetManyAsync(bookId);
-            return chapters.Select(x => new GetChapterDto(x.Id,x.Name, x.Content, x.BookId)).Where(y => y.bookId == bookId);
+            var authRez = await _AuthorizationService.AuthorizeAsync(User, chapters, PolicyNames.ResourceOwner);
+
+            if (!authRez.Succeeded)
+            {
+                return Forbid();
+            }
+
+            return Ok(chapters.Select(x => new GetChapterDto(x.Id,x.Name, x.Content, x.BookId)).Where(y => y.bookId == bookId));
         }
 
-        [HttpDelete]
-        [Route("{chapterId}")]
-        public async Task<ActionResult> Remove(int chapterId, int bookId)
-        {
-            var chapter = await _ChapterRepository.GetAsync(chapterId, bookId);
-            if (chapter == null) return NotFound();
-            await _ChapterRepository.DeleteAsync(chapter);
+        //[HttpDelete]
+        //[Route("{chapterId}")]
+        //public async Task<ActionResult> Remove(int chapterId, int bookId)
+        //{
+        //    var chapter = await _ChapterRepository.GetAsync(chapterId, bookId);
+        //    if (chapter == null) return NotFound();
+        //    await _ChapterRepository.DeleteAsync(chapter);
 
-            //204
-            return NoContent();
-        }
+        //    //204
+        //    return NoContent();
+        //}
 
         [HttpPut]
         [Route("{chapterId}")]

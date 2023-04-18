@@ -17,6 +17,7 @@ namespace Bakalauras.Controllers
             genreRepository = repo;
         }
         [HttpGet]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<IEnumerable<GenreDto>> GetMany()
         {
             var genres = await genreRepository.GetManyAsync();
@@ -25,6 +26,7 @@ namespace Bakalauras.Controllers
 
         [HttpGet]
         [Route("{genreId}")]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<ActionResult<GenreDto>> Get(int genreId)
         {
             var genre = await genreRepository.GetAsync(genreId);
@@ -58,6 +60,7 @@ namespace Bakalauras.Controllers
 
         [HttpDelete]
         [Route("{genreId}")]
+        [Authorize(Roles = BookieRoles.Admin)]
         public async Task<ActionResult> Remove(int genreId)
         {
             var genre = await genreRepository.GetAsync(genreId);

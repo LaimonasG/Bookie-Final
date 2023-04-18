@@ -23,37 +23,46 @@ namespace Bakalauras.Controllers
         private readonly IChaptersRepository _ChaptersRepository;
         private readonly UserManager<BookieUser> _UserManager;
         private readonly IProfileRepository _ProfileRepository;
-        private readonly IAuthorizationService authorizationService;
+        private readonly IAuthorizationService _AuthorizationService;
 
-        public TextController(ITextRepository repo, IAuthorizationService authServise, IChaptersRepository chaptersRepository,
-            UserManager<BookieUser> mng, IProfileRepository pre, IChaptersRepository chrep)
+        public TextController(ITextRepository repo, IAuthorizationService authServise, UserManager<BookieUser> mng,
+            IProfileRepository pre, IChaptersRepository chrep)
         {
             _Textrepostory = repo;
-            authorizationService = authServise;
+            _AuthorizationService = authServise;
             _ProfileRepository = pre;
             _UserManager = mng;
             _ChaptersRepository = chrep;
         }
+
         [HttpGet]
-        public async Task<IEnumerable<TextDto>> GetMany(string GenreName)
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<IEnumerable<TextDtoToBuy>> GetMany(string GenreName)
         {
             var texts = await _Textrepostory.GetManyAsync(GenreName);
-            return texts.Select(x => new TextDto(x.Id, x.Name, x.GenreName, x.Content, x.Price, DateTime.Now, x.UserId)).Where(y => y.GenreName == GenreName);
+            return texts.Select(x => new TextDtoToBuy(x.Id, x.Name, x.GenreName, x.Price, DateTime.Now, x.UserId)).Where(y => y.GenreName == GenreName);
         }
 
         [HttpGet]
         [Route("{textId}")]
-        public async Task<ActionResult<TextDto>> Get(int textId)
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<TextDtoToBuy>> Get(int textId)
         {
             var text = await _Textrepostory.GetAsync(textId);
             if (text == null) return NotFound();
-            return new TextDto(text.Id, text.Name, text.GenreName, text.Content, text.Price, text.Created, text.UserId);
+            return new TextDtoToBuy(text.Id, text.Name, text.GenreName, text.Price, text.Created, text.UserId);
         }
 
         [HttpPost]
-        public async Task<CreateTextDto> Create([FromForm] IFormFile file, [FromForm] string textName, [FromForm] double price, string genreName)
+        [Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<CreateTextDto>> Create([FromForm] IFormFile file, [FromForm] string textName, [FromForm] double price, string genreName)
         {
             string content = _ChaptersRepository.ExtractTextFromPDf(file);
+            if (content == "error")
+            {
+                return BadRequest("Failo formatas netinkamas, galima įkelti tik PDF tipo failus.");
+            }
+
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             Text text = new Text { Name = textName, GenreName=genreName, Content = content,Price=price, UserId = user.Id };
             await _Textrepostory.CreateAsync(text,genreName);
@@ -63,12 +72,12 @@ namespace Bakalauras.Controllers
 
         [HttpPut]
         [Route("{textId}")]
-        [Authorize(Roles = $"{BookieRoles.BookieUser},{BookieRoles.Admin}")]
+        [Authorize(Roles = $"{BookieRoles.BookieWriter},{BookieRoles.Admin}")]
         public async Task<ActionResult<UpdateTextDto>> Update(int textId, [FromForm] IFormFile? file, [FromForm] string? textName,double Price,string genreName)
         {
             var text = await _Textrepostory.GetAsync(textId);
             if (text == null) return NotFound();
-            var authRez = await authorizationService.AuthorizeAsync(User, text, PolicyNames.ResourceOwner);
+            var authRez = await _AuthorizationService.AuthorizeAsync(User, text, PolicyNames.ResourceOwner);
             if (!authRez.Succeeded)
             {
                 return Forbid();
@@ -83,21 +92,21 @@ namespace Bakalauras.Controllers
             return new UpdateTextDto(text.Name, text.Content, text.Price);
         }
 
-        [HttpDelete]
-        [Route("{textId}")]
-        public async Task<ActionResult> Remove(int textId)
-        {
-            var text = await _Textrepostory.GetAsync(textId);
-            if (text == null) return NotFound();
-            await _Textrepostory.DeleteAsync(text);
+        //[HttpDelete]
+        //[Route("{textId}")]
+        //public async Task<ActionResult> Remove(int textId)
+        //{
+        //    var text = await _Textrepostory.GetAsync(textId);
+        //    if (text == null) return NotFound();
+        //    await _Textrepostory.DeleteAsync(text);
 
-            //204
-            return NoContent();
-        }
+        //    //204
+        //    return NoContent();
+        //}
 
         [HttpPut]
         [Route("{textId}/buy")]
-        [Authorize(Roles = BookieRoles.BookieReader)]
+        [Authorize(Roles = $"{BookieRoles.BookieReader},{BookieRoles.Admin}")]
         public async Task<ActionResult<ProfileDto>> PurchaseText(int textId)
         {
             var text = await _Textrepostory.GetAsync(textId);
@@ -111,11 +120,11 @@ namespace Bakalauras.Controllers
 
             if (profile.Points < text.Price)
             {
-                return BadRequest("Insufficient points.");
+                return BadRequest("Pirkiniui nepakanka taškų.");
             }
             else if(await _Textrepostory.WasTextBought(text))
             {
-                return BadRequest("User already owns the text.");
+                return BadRequest("Naudotojas jau nusipirkęs šį tekstą.");
             }
             else
             {

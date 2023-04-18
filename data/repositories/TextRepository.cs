@@ -4,6 +4,7 @@ using iText.Kernel.Pdf;
 using System.Text.RegularExpressions;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
 
 namespace Bakalauras.data.repositories
 {
@@ -17,14 +18,17 @@ namespace Bakalauras.data.repositories
         Task<IReadOnlyList<Text>> GetUserTextsAsync(Profile profile);
         Task CreateProfileTextAsync(ProfileText pb);
         Task<bool> WasTextBought(Text text);
+        Task<bool> CheckIfUserHasText(string userId, int textId);
     }
 
     public class TextsRepository : ITextRepository
     {
         private readonly BookieDBContext _BookieDBContext;
-        public TextsRepository(BookieDBContext context)
+        private readonly IProfileRepository _ProfileRepository;
+        public TextsRepository(BookieDBContext context, IProfileRepository profileRepository)
         {
-            _BookieDBContext = context;           
+            _BookieDBContext = context;
+            _ProfileRepository = profileRepository;
         }
 
         public async Task CreateAsync(Text text, string genreName)
@@ -81,6 +85,15 @@ namespace Bakalauras.data.repositories
             var found= await _BookieDBContext.ProfileTexts.FirstOrDefaultAsync(x => x.TextId==text.Id);
             if (found != null) return true;
             return false;
+        }
+
+        public async Task<bool> CheckIfUserHasText(string userId, int textId)
+        {
+            var profile = await _ProfileRepository.GetAsync(userId);
+            var profileText = await _BookieDBContext.ProfileTexts
+           .SingleOrDefaultAsync(x => x.TextId == textId && x.ProfileId == profile.Id);
+            if (profileText == null) return false;
+            return true;
         }
     }
 }

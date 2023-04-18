@@ -18,24 +18,26 @@ namespace Bakalauras.data.repositories
         Task<Book> GetAsync(int bookId);
         Task<IReadOnlyList<Book>> GetManyAsync();
         Task UpdateAsync(Book book);
-
-        Task<IReadOnlyList<Book>> GetUserBooksAsync(string userId);
-
+        Task<List<Book>> GetUserBooksAsync(string userId);
         Task<IReadOnlyList<SubscribeToBookDto>> GetUserSubscribedBooksAsync(Profile profile);
-        //Task<List<Book>> GetFinishedBooks(string genreName);
-
-        //Task<List<Book>> GetUnFinishedBooks(string genreName);
+        Task<bool> CheckIfUserHasBook(string userId, int bookId);
+        Task<List<BookDtoBought>> ConvertBooksToBookDtoBoughtList(List<Book> books);
     }
 
     public class BookRepository : IBookRepository
     {
         private readonly BookieDBContext _BookieDBContext;
         private readonly UserManager<BookieUser> _UserManager;
+        private readonly IProfileRepository _ProfileRepository;
+        private readonly IChaptersRepository _ChaptersRepository;
 
-        public BookRepository(BookieDBContext context, UserManager<BookieUser> usrmng)
+        public BookRepository(BookieDBContext context, UserManager<BookieUser> usrmng, IProfileRepository profileRepository
+, IChaptersRepository chaptersRepository            )
         {
             _BookieDBContext = context;
             _UserManager = usrmng;
+            _ProfileRepository = profileRepository;
+            _ChaptersRepository = chaptersRepository;
         }
 
         public async Task<Book> GetAsync(int bookId)
@@ -48,7 +50,7 @@ namespace Bakalauras.data.repositories
             return await _BookieDBContext.Books.ToListAsync();
         }
 
-        public async Task<IReadOnlyList<Book>> GetUserBooksAsync(string userId)
+        public async Task<List<Book>> GetUserBooksAsync(string userId)
         {
             return await _BookieDBContext.Books.Where(x => x.UserId == userId).ToListAsync();
         }
@@ -92,6 +94,36 @@ namespace Bakalauras.data.repositories
         {
             _BookieDBContext.Books.Remove(book);
             await _BookieDBContext.SaveChangesAsync();
+        }
+
+        public async Task<bool> CheckIfUserHasBook(string userId, int bookId)
+        {
+            var profile = await _ProfileRepository.GetAsync(userId);
+            var profileBook= await _BookieDBContext.ProfileBooks
+           .SingleOrDefaultAsync(x => x.BookId == bookId && x.ProfileId == profile.Id);
+            if (profileBook == null) return false;
+            return true;
+        }
+
+        public async Task<List<BookDtoBought>> ConvertBooksToBookDtoBoughtList(List<Book> books)
+        {
+            var bookDtoBoughtList = new List<BookDtoBought>();
+            foreach (var book in books)
+            {
+                var chapters = await _ChaptersRepository.GetManyAsync(book.Id);
+                var bookDtoBought = new BookDtoBought(
+                    Id: book.Id,
+                    Name: book.Name,
+                    Chapters: (ICollection<Chapter>)chapters,
+                    GenreName: book.GenreName,
+                    Description: book.Description,
+                    Price: book.BookPrice,
+                    Created: book.Created,
+                    UserId: book.UserId
+                );
+                bookDtoBoughtList.Add(bookDtoBought);
+            }
+            return bookDtoBoughtList;
         }
 
         //public async Task<List<Book>> GetFinishedBooks(string genreName)

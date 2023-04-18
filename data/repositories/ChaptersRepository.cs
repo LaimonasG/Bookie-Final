@@ -79,6 +79,12 @@ namespace Bakalauras.data.repositories
 
         public string ExtractTextFromPDf(IFormFile file)
         {
+            var fileExtension = Path.GetExtension(file.FileName);
+            if (fileExtension.ToLower() != ".pdf")
+            {
+                return "error";
+            }
+
             var fileContent = new StringBuilder();
             using (var reader = new PdfReader(file.OpenReadStream()))
             {
