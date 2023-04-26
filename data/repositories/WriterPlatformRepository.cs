@@ -1,5 +1,6 @@
 ﻿using Bakalauras.Auth.Model;
 using Bakalauras.data.dtos;
+using Bakalauras.data.entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 

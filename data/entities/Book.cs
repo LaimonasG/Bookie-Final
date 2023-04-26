@@ -12,6 +12,8 @@ public class Book : IUserOwnedResource
     [Required]
     public string UserId { get; set; }
 
+    public string? Author { get; set; }
+
     public string Name { get; set; }
 
     public double ChapterPrice { get; set; }
@@ -21,6 +23,8 @@ public class Book : IUserOwnedResource
     public string Description { get; set; }
 
     public int IsFinished { get; set; }
+
+    public string? CoverImagePath { get; set; }
 
     public DateTime Created { get; set; }
 

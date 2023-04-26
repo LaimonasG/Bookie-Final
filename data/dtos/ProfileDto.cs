@@ -2,7 +2,9 @@
 
 namespace Bakalauras.data.dtos
 {
-    public record PersonalInfoDto(string? userName,string? email);
+    public record PersonalInfoDto(string? userName,string? email, string? Name, string? Surname);
+
+    public record AuthorInfoDto(string? Name, string? Surname);
     public record CreateProfileDto(string userId);
     public record UpdateProfilePointsDto(int Points);
     public record ProfileDto(string userId, string userName, string email, double points);

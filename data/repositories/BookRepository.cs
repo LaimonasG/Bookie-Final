@@ -22,20 +22,21 @@ namespace Bakalauras.data.repositories
         Task<IReadOnlyList<SubscribeToBookDto>> GetUserSubscribedBooksAsync(Profile profile);
         Task<bool> CheckIfUserHasBook(string userId, int bookId);
         Task<List<BookDtoBought>> ConvertBooksToBookDtoBoughtList(List<Book> books);
+        Task<string> GetAuthorInfo(int bookId);
+
+        Task<string> SaveCoverImageBook(IFormFile coverImage);
     }
 
     public class BookRepository : IBookRepository
     {
         private readonly BookieDBContext _BookieDBContext;
-        private readonly UserManager<BookieUser> _UserManager;
         private readonly IProfileRepository _ProfileRepository;
         private readonly IChaptersRepository _ChaptersRepository;
 
-        public BookRepository(BookieDBContext context, UserManager<BookieUser> usrmng, IProfileRepository profileRepository
-, IChaptersRepository chaptersRepository            )
+        public BookRepository(BookieDBContext context, IProfileRepository profileRepository,
+            IChaptersRepository chaptersRepository)
         {
             _BookieDBContext = context;
-            _UserManager = usrmng;
             _ProfileRepository = profileRepository;
             _ChaptersRepository = chaptersRepository;
         }
@@ -119,11 +120,44 @@ namespace Bakalauras.data.repositories
                     Description: book.Description,
                     Price: book.BookPrice,
                     Created: book.Created,
-                    UserId: book.UserId
+                    UserId: book.UserId,
+                    Author:await GetAuthorInfo(book.Id),
+                    CoverImageUrl: book.CoverImagePath,
+                    IsFinished:book.IsFinished
                 );
                 bookDtoBoughtList.Add(bookDtoBought);
             }
             return bookDtoBoughtList;
+        }
+
+        public async Task<string> GetAuthorInfo(int bookId)
+        {
+            Book book = await GetAsync(bookId);
+            var authorProfile = await _ProfileRepository.GetAsync(book.UserId);
+            string rez;
+            if (authorProfile.Name == null && authorProfile.Surname == null)
+                rez = "Anonimas";
+            else
+                rez = authorProfile.Name + ' ' + authorProfile.Surname;
+            return rez;
+        }
+
+        public async Task<string> SaveCoverImageBook(IFormFile coverImage)
+        {
+            if (coverImage == null || coverImage.Length == 0)
+            {
+                return null;
+            }
+
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(coverImage.FileName);
+            var filePath = Path.Combine("../bookie-ui-vite/bookie/public/BookImages", fileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await coverImage.CopyToAsync(fileStream);
+            }
+
+            return "/BookImages/" + fileName;
         }
 
         //public async Task<List<Book>> GetFinishedBooks(string genreName)

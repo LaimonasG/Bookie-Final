@@ -28,8 +28,7 @@ namespace Bakalauras.Controllers
         private readonly ITextRepository _Textrepostory;
 
         public ProfileController(IProfileRepository repo, IAuthorizationService authService,
-            UserManager<BookieUser> userManager,IBookRepository repob,IChaptersRepository chrep,
-            IChaptersRepository chrep)
+            UserManager<BookieUser> userManager,IBookRepository repob,IChaptersRepository chrep)
         {
             _ProfileRepository = repo;
             _AuthorizationService = authService;
@@ -139,7 +138,7 @@ namespace Bakalauras.Controllers
         }
 
         [HttpPut]
-        [Route("info/{userId}")]
+        [Route("info")]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<ActionResult<PersonalInfoDto>> UpdatePersonalInfo(PersonalInfoDto dto)
         {
@@ -153,10 +152,10 @@ namespace Bakalauras.Controllers
                 return Forbid();
             }
 
-            string error= await _ProfileRepository.UpdatePersonalInfoAsync(dto, user.Id);
+            string error= await _ProfileRepository.UpdatePersonalInfoAsync(dto, user,profile);
             if(error!=null) { return BadRequest(error); }
 
-            return Ok(new PersonalInfoDto(user.UserName, user.Email));
+            return Ok(new PersonalInfoDto(user.UserName, user.Email,dto.Name,dto.Surname));
         }
 
         [HttpPut]
@@ -254,53 +253,5 @@ namespace Bakalauras.Controllers
             return BadRequest("Įvyko banko klaida, bandykite iš naujo.");
         }
 
-        [HttpGet]
-        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<IEnumerable<TextDtoToBuy>> GetManyUsertexts(string GenreName)
-        {
-            //need to implement
-
-            //var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            //var books = await _BookRepository.GetUserBooksAsync(user.Id);
-
-            //return Ok(await _BookRepository.ConvertBooksToBookDtoBoughtList(books));
-        }
-
-        [HttpGet]
-        [Route("{textId}")]
-        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<TextDtoBought>> GetUserText(int textId)
-        {
-            var text=await _Textrepostory.GetAsync(textId);
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            bool hasText=await _Textrepostory.CheckIfUserHasText(user.Id, textId);
-            if (!hasText) return BadRequest("Naudotojas neturi prieigos prie šio teksto.");
-            return new TextDtoBought(text.Id, text.Name, text.GenreName,text.Content, text.Price, text.Created, text.UserId);
-        }
-
-        [HttpGet]
-        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<List<BookDtoBought>>> GetManyUserBooks()
-        {
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            var books = await _BookRepository.GetUserBooksAsync(user.Id);
-            
-            return Ok(await _BookRepository.ConvertBooksToBookDtoBoughtList(books));
-        }
-
-        [HttpGet]
-        [Route("{bookId}")]
-        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<BookDtoBought>> GetUserBook(int bookId)
-        {
-            var book = await _BookRepository.GetAsync(bookId);
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            bool hasBook=await _BookRepository.CheckIfUserHasBook(user.Id, bookId);
-            if (!hasBook) return BadRequest("Naudotojas neturi prieigos prie šios knygos.");
-
-            var chapters=await _ChaptersRepository.GetManyAsync(bookId);
-            return new BookDtoBought(book.Id, book.Name, (ICollection<Chapter>?)chapters, book.GenreName, book.Description,
-                book.ChapterPrice, book.Created, book.UserId);
-        }
     }
 }

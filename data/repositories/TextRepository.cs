@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using Bakalauras.data.dtos;
 
 namespace Bakalauras.data.repositories
 {
@@ -15,10 +16,15 @@ namespace Bakalauras.data.repositories
         Task<Text?> GetAsync(int TextId);
         Task<IReadOnlyList<Text>> GetManyAsync(string genreName);
         Task UpdateAsync(Text Text);
-        Task<IReadOnlyList<Text>> GetUserTextsAsync(Profile profile);
+        Task<IReadOnlyList<Text>> GetUserBoughtTextsAsync(Profile profile);
         Task CreateProfileTextAsync(ProfileText pb);
         Task<bool> WasTextBought(Text text);
         Task<bool> CheckIfUserHasText(string userId, int textId);
+
+        Task<List<Text>> GetUserTextsAsync(string userId);
+
+        Task<List<TextDtoBought>> ConvertTextsTotextDtoBoughtList(List<Text> texts);
+        Task<string> SaveCoverImageText(IFormFile coverImage);
     }
 
     public class TextsRepository : ITextRepository
@@ -49,7 +55,7 @@ namespace Bakalauras.data.repositories
             return await _BookieDBContext.Texts.Where(x => x.GenreName == genreName).ToListAsync();
         }
 
-        public async Task<IReadOnlyList<Text>> GetUserTextsAsync(Profile profile)
+        public async Task<IReadOnlyList<Text>> GetUserBoughtTextsAsync(Profile profile)
         {
             var profileTexts = await _BookieDBContext.ProfileTexts
                          .Where(pt => pt.ProfileId == profile.Id)
@@ -94,6 +100,51 @@ namespace Bakalauras.data.repositories
            .SingleOrDefaultAsync(x => x.TextId == textId && x.ProfileId == profile.Id);
             if (profileText == null) return false;
             return true;
+        }
+
+        public async Task<List<Text>> GetUserTextsAsync(string userId)
+        {
+            return await _BookieDBContext.Texts.Where(x => x.UserId == userId).ToListAsync();
+        }
+
+        public async Task<List<TextDtoBought>> ConvertTextsTotextDtoBoughtList(List<Text> texts)
+        {
+            var textDtoBoughtList = new List<TextDtoBought>();
+            foreach (var text in texts)
+            {
+                var textDtoBought = new TextDtoBought(
+                    Id: text.Id,
+                    Name: text.Name,           
+                    GenreName: text.GenreName,
+                    Content: text.Content,
+                    Description: text.Description,
+                    Price: text.Price,
+                    CoverImageUrl:text.CoverImagePath,
+                    Author:text.Author,
+                    Created: text.Created,
+                    UserId: text.UserId
+                );
+                textDtoBoughtList.Add(textDtoBought);
+            }
+            return textDtoBoughtList;
+        }
+
+        public async Task<string> SaveCoverImageText(IFormFile coverImage)
+        {
+            if (coverImage == null || coverImage.Length == 0)
+            {
+                return null;
+            }
+
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(coverImage.FileName);
+            var filePath = Path.Combine("../bookie-ui-vite/bookie/public/TextImages", fileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await coverImage.CopyToAsync(fileStream);
+            }
+
+            return "/TextImages/" + fileName;
         }
     }
 }

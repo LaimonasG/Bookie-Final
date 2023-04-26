@@ -36,11 +36,11 @@ namespace Bakalauras.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<IEnumerable<TextDtoToBuy>> GetMany(string GenreName)
         {
             var texts = await _Textrepostory.GetManyAsync(GenreName);
-            return texts.Select(x => new TextDtoToBuy(x.Id, x.Name, x.GenreName, x.Price, DateTime.Now, x.UserId)).Where(y => y.GenreName == GenreName);
+            return texts.Select(x => new TextDtoToBuy(x.Id, x.Name, x.GenreName,x.Description, x.Price,x.CoverImagePath,
+                x.Author, DateTime.Now, x.UserId)).Where(y => y.GenreName == GenreName);
         }
 
         [HttpGet]
@@ -50,30 +50,43 @@ namespace Bakalauras.Controllers
         {
             var text = await _Textrepostory.GetAsync(textId);
             if (text == null) return NotFound();
-            return new TextDtoToBuy(text.Id, text.Name, text.GenreName, text.Price, text.Created, text.UserId);
+            return new TextDtoToBuy(text.Id, text.Name, text.GenreName,text.Description, text.Price,text.CoverImagePath,
+                text.Author, text.Created, text.UserId);
         }
 
         [HttpPost]
         [Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<CreateTextDto>> Create([FromForm] IFormFile file, [FromForm] string textName, [FromForm] double price, string genreName)
+        public async Task<ActionResult<TextDto>> Create([FromForm] CreateTextDto dto, string genreName)
         {
-            string content = _ChaptersRepository.ExtractTextFromPDf(file);
+            string content = _ChaptersRepository.ExtractTextFromPDf(dto.File);
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            var profile = await _ProfileRepository.GetAsync(user.Id);
+            string author = string.IsNullOrEmpty(profile.Name) || string.IsNullOrEmpty(profile.Surname) ?
+                "Autorius nežinomas" : profile.Name + ' ' + profile.Surname;
             if (content == "error")
             {
                 return BadRequest("Failo formatas netinkamas, galima įkelti tik PDF tipo failus.");
             }
+            
+            Text text = new Text { Name = dto.Name, GenreName=genreName, Content = content,Price=double.Parse(dto.Price),
+                UserId = user.Id,Author=author,Description=dto.Description};
 
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            Text text = new Text { Name = textName, GenreName=genreName, Content = content,Price=price, UserId = user.Id };
+            if (dto.CoverImage != null)
+            {
+                text.CoverImagePath = await _Textrepostory.SaveCoverImageText(dto.CoverImage);
+            }
+
+
             await _Textrepostory.CreateAsync(text,genreName);
 
-            return new CreateTextDto(textName,content,price);
+            return new TextDto(text.Name, text.GenreName, text.Content,text.Description,text.Price,text.CoverImagePath,
+                text.Created);
         }
 
         [HttpPut]
         [Route("{textId}")]
         [Authorize(Roles = $"{BookieRoles.BookieWriter},{BookieRoles.Admin}")]
-        public async Task<ActionResult<UpdateTextDto>> Update(int textId, [FromForm] IFormFile? file, [FromForm] string? textName,double Price,string genreName)
+        public async Task<ActionResult<TextDto>> Update([FromForm] UpdateTextDto dto, int textId)
         {
             var text = await _Textrepostory.GetAsync(textId);
             if (text == null) return NotFound();
@@ -83,13 +96,14 @@ namespace Bakalauras.Controllers
                 return Forbid();
             }
 
-            if (textName != null) { text.Name = textName; }
-            if (file != null) { text.Content = _ChaptersRepository.ExtractTextFromPDf(file); }
-            if (Price != 0) { text.Price = Price; }
+            if (dto.Name != null) { text.Name = dto.Name; }
+            if (dto.File != null) { text.Content = _ChaptersRepository.ExtractTextFromPDf(dto.File); }
+            if (double.Parse(dto.Price) != 0) { text.Price = double.Parse(dto.Price); }
 
             await _Textrepostory.UpdateAsync(text);
 
-            return new UpdateTextDto(text.Name, text.Content, text.Price);
+            return new TextDto(text.Name, text.GenreName, text.Content, text.Description, text.Price, text.CoverImagePath,
+               text.Created);
         }
 
         //[HttpDelete]
@@ -146,7 +160,7 @@ namespace Bakalauras.Controllers
             await _ProfileRepository.UpdateAsync(authorProfile);
             await _Textrepostory.CreateProfileTextAsync(prte);
 
-            List<Text> texts = (List<Text>)await _Textrepostory.GetUserTextsAsync(profile);
+            List<Text> texts = (List<Text>)await _Textrepostory.GetUserBoughtTextsAsync(profile);
 
             return Ok(new ProfileTextsDto(user.Id, user.UserName, texts));
         }

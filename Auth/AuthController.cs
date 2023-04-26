@@ -72,8 +72,17 @@ namespace Bakalauras.Controllers
             // valid user
             var roles = await _UserManager.GetRolesAsync(user);
             var accessToken =  _JwtTokenService.CreateAccessToken(user.UserName,user.Id,roles);
+            var refreshToken = _JwtTokenService.CreateRefreshToken();
+
+            Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = DateTimeOffset.UtcNow.AddDays(7)
+            });
 
             return Ok(new SuccessfulLoginDto(accessToken));
+
+
         }
 
         [HttpPut]

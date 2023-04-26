@@ -1,6 +1,7 @@
 ﻿using Bakalauras.Auth.Model;
 using Bakalauras.data.dtos;
 using Bakalauras.data.entities;
+using Bakalauras.Migrations;
 using iText.Layout.Element;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +22,7 @@ namespace Bakalauras.data.repositories
         Task<Profile?> GetAsync(string userId);
         Task<IReadOnlyList<Profile>> GetManyAsync();
         Task UpdateAsync(Profile profile);
-        Task<string> UpdatePersonalInfoAsync(PersonalInfoDto dto, string userId);
+        Task<string> UpdatePersonalInfoAsync(PersonalInfoDto dto, BookieUser user,Profile profile);
         Task<List<ProfileBookOffersDto>> CalculateBookOffers(Profile profile);
         ProfileBookOffersDto CalculateBookOffer(ProfileBook pb);
         ProfileBookOffersDto CalculateBookSubscriptionPrice(ProfileBook pb,Book book);
@@ -60,13 +61,10 @@ namespace Bakalauras.data.repositories
     {
         private const string SystemWalletId = "cf015658-171a-47ca-be37-98f04857c91d";
         private readonly BookieDBContext _BookieDBContext;
-        private readonly IBookRepository _BookRepository;
         private readonly UserManager<BookieUser> _UserManager;
-        public ProfileRepository(BookieDBContext context, UserManager<BookieUser> mng, IBookRepository bookRepository)
+        public ProfileRepository(BookieDBContext context)
         {
             _BookieDBContext = context;
-            _UserManager = mng;
-            _BookRepository = bookRepository;
         }
 
         public async Task<Profile?> GetAsync(string userId)
@@ -104,20 +102,23 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
-        public async Task<string> UpdatePersonalInfoAsync(PersonalInfoDto dto, string userId)
+        public async Task<string> UpdatePersonalInfoAsync(PersonalInfoDto dto, BookieUser user, Profile profile)
         {
-            var user = await _UserManager.FindByIdAsync(userId);
             bool badEmail = false;
-            bool badUsername=false;
+            bool badUsername = false;
+            bool badName = false;
+            bool badSurname = false;
             string usernameEmailError = "Vartotojo vardo ir elektroninio pašto formatai neteisingi.";
             string usernameError = "Vartotojo vardo formatas neteisingas.";
+            string nameError = "Vardo formatas neteisingas.";
+            string surnameError = "Pavardės formatas neteisingas.";
             string emailError = "Elektroninio pašto formatas neteisingas.";
 
             if (dto.userName != null)
             {
-                if (dto.userName.Length > 25 && Regex.IsMatch(dto.userName, @"[^a-zA-Z0-9]"))
+                if (dto.userName.Length > 25 || Regex.IsMatch(dto.userName, @"[^a-zA-Z0-9]"))
                 {
-                    badUsername=true;
+                    badUsername = true;
                 }
                 user.UserName = dto.userName;
                 user.NormalizedUserName = dto.userName.ToUpper();
@@ -131,9 +132,29 @@ namespace Bakalauras.data.repositories
                 user.Email = dto.email;
                 user.NormalizedEmail = dto.email;
             }
-            if (badEmail && badUsername) { return usernameEmailError; } else
-            if (badEmail) { return emailError; } else if(badUsername) { return usernameError; }
+            if (dto.Name != null)
+            {
+                if (dto.Name.Length > 25)
+                {
+                    badName = true;
+                }
+                profile.Name = dto.Name;
+            }
+            if (dto.Surname != null)
+            {
+                if (dto.Surname.Length > 25)
+                {
+                    badSurname = true;
+                }
+                profile.Surname = dto.Surname;
+            }
+            if (badEmail && badUsername) { return usernameEmailError; }
+            else if (badEmail) { return emailError; }
+            else if (badUsername) { return usernameError; }
+            else if (badName) { return nameError; }
+            else if (badSurname) { return surnameError; }
 
+            _BookieDBContext.Profiles.Update(profile);
             _BookieDBContext.Users.Update(user);
             await _BookieDBContext.SaveChangesAsync();
 

@@ -12,13 +12,9 @@ namespace Bakalauras.data.repositories
     public class AdminRepository : IAdminRepository
     {
         private readonly BookieDBContext _BookieDBContext;
-        private readonly IBookRepository _BookRepository;
-        private readonly UserManager<BookieUser> _UserManager;
-        public AdminRepository(BookieDBContext context, UserManager<BookieUser> mng, IBookRepository bookRepository)
+        public AdminRepository(BookieDBContext context)
         {
             _BookieDBContext = context;
-            _UserManager = mng;
-            _BookRepository = bookRepository;
         }
 
         public async Task<List<BookieUser>> GetUserList()

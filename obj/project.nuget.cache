@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "nGgGodLFRacXcOBUZOZBUcXH+vf1itlnd+EI5RcriO3XS2DPqm+Ajhje3fafIDNPD6Gtsl0UXq7H8xbAyc/blg==",
+  "dgSpecHash": "Wj4u2YGJrwJABWHxtEbO5tVixVrihaa5mDeUe6/uYPdEnrkKYRtHGl6udj4PpcqysYW3HFBsbySfvV3q1ph7DQ==",
   "success": true,
-  "projectFilePath": "D:\\laimi\\Bakalauras\\Bakalauras.csproj",
+  "projectFilePath": "D:\\laimi\\Bakalauras\\BookieAPI\\Bakalauras.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\laimi\\.nuget\\packages\\humanizer.core\\2.8.26\\humanizer.core.2.8.26.nupkg.sha512",
     "C:\\Users\\laimi\\.nuget\\packages\\itext7\\7.2.5\\itext7.7.2.5.nupkg.sha512",

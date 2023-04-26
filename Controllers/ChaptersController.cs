@@ -42,68 +42,68 @@ namespace Bakalauras.Controllers
             _ProfileRepository = profileRepository;
         }
 
-        [HttpPost]
-        [Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<CreateChapterDto>> Create([FromForm]IFormFile file, [FromForm]string chapterName, [FromForm] string isFinished, int bookId)
-        {
-            string content = _ChapterRepository.ExtractTextFromPDf(file);
-            var book=await _BookRepository.GetAsync(bookId);
-            var authRez = await _AuthorizationService.AuthorizeAsync(User, book, PolicyNames.ResourceOwner);
+        //[HttpPost]
+        //[Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
+        //public async Task<ActionResult<CreateChapterDto>> Create([FromForm]IFormFile file, [FromForm]string chapterName, [FromForm] string isFinished, int bookId)
+        //{
+        //    string content = _ChapterRepository.ExtractTextFromPDf(file);
+        //    var book=await _BookRepository.GetAsync(bookId);
+        //    var authRez = await _AuthorizationService.AuthorizeAsync(User, book, PolicyNames.ResourceOwner);
 
-            if (!authRez.Succeeded)
-            {
-                return Forbid();
-            }
+        //    if (!authRez.Succeeded)
+        //    {
+        //        return Forbid();
+        //    }
 
-            if (content == "error")
-            {
-                return BadRequest("Failo formatas netinkamas, galima įkelti tik PDF tipo failus.");
-            }
+        //    if (content == "error")
+        //    {
+        //        return BadRequest("Failo formatas netinkamas, galima įkelti tik PDF tipo failus.");
+        //    }
 
-            Chapter chapter= new Chapter { Name=chapterName, BookId=bookId,Content= content,UserId= User.FindFirstValue(JwtRegisteredClaimNames.Sub) };
-            await _ChapterRepository.CreateAsync(chapter, int.Parse(isFinished));
+        //    Chapter chapter= new Chapter { Name=chapterName, BookId=bookId,Content= content,UserId= User.FindFirstValue(JwtRegisteredClaimNames.Sub) };
+        //    await _ChapterRepository.CreateAsync(chapter, int.Parse(isFinished));
 
-            return new CreateChapterDto(chapterName, content);
-        }
+        //    return new CreateChapterDto(chapterName, content);
+        //}
 
-        [HttpGet]
-        [Route("{chapterId}")]
-        [Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<GetChapterDto>> GetOneChapter(int bookId,int chapterId)
-        {
-            var chapter = await _ChapterRepository.GetAsync(bookId, chapterId);
+        //[HttpGet]
+        //[Route("{chapterId}")]
+        //[Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
+        //public async Task<ActionResult<Chapter>> GetOneChapter(int bookId,int chapterId)
+        //{
+        //    var chapter = await _ChapterRepository.GetAsync(bookId, chapterId);
 
-            var authRez = await _AuthorizationService.AuthorizeAsync(User, chapter, PolicyNames.ResourceOwner);
+        //    var authRez = await _AuthorizationService.AuthorizeAsync(User, chapter, PolicyNames.ResourceOwner);
 
-            if (!authRez.Succeeded)
-            {
-                return Forbid();
-            }
-            if (chapter == null) return NotFound();
-            return new GetChapterDto(chapter.Id,chapter.Name,chapter.Content,bookId);
-        }
+        //    if (!authRez.Succeeded)
+        //    {
+        //        return Forbid();
+        //    }
+        //    if (chapter == null) return NotFound();
+        //    return new Chapter(chapter.Id,chapter.Name,chapter.Content,bookId);
+        //}
 
-        [HttpGet]
-        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<IEnumerable<GetChapterDto>>> GetAllChapters(int bookId)
-        {
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            var hasBook = await _BookRepository.CheckIfUserHasBook(user.Id, bookId);
-            if (!hasBook)
-            {
-                return BadRequest("Naudotojas neturi prieigos prie šių skyrių.");
-            }
+        //[HttpGet]
+        //[Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        //public async Task<ActionResult<IEnumerable<Chapter>>> GetAllChapters(int bookId)
+        //{
+        //    var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+        //    var hasBook = await _BookRepository.CheckIfUserHasBook(user.Id, bookId);
+        //    if (!hasBook)
+        //    {
+        //        return BadRequest("Naudotojas neturi prieigos prie šių skyrių.");
+        //    }
 
-            var chapters = await _ChapterRepository.GetManyAsync(bookId);
-            var authRez = await _AuthorizationService.AuthorizeAsync(User, chapters, PolicyNames.ResourceOwner);
+        //    var chapters = await _ChapterRepository.GetManyAsync(bookId);
+        //    var authRez = await _AuthorizationService.AuthorizeAsync(User, chapters, PolicyNames.ResourceOwner);
 
-            if (!authRez.Succeeded)
-            {
-                return Forbid();
-            }
+        //    if (!authRez.Succeeded)
+        //    {
+        //        return Forbid();
+        //    }
 
-            return Ok(chapters.Select(x => new GetChapterDto(x.Id,x.Name, x.Content, x.BookId)).Where(y => y.bookId == bookId));
-        }
+        //    return Ok(chapters.Select(x => new Chapter(x.Id,x.Name, x.Content, x.BookId)).Where(y => y.book == bookId));
+        //}
 
         //[HttpDelete]
         //[Route("{chapterId}")]

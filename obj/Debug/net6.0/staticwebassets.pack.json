@@ -1,0 +1,25 @@
+{
+  "Files": [
+    {
+      "Id": "D:\\laimi\\Bakalauras\\wwwroot\\images\\books\\8d348c6e-0c77-41ef-9df8-011a0af433da.jpg",
+      "PackagePath": "staticwebassets\\images\\books\\8d348c6e-0c77-41ef-9df8-011a0af433da.jpg"
+    },
+    {
+      "Id": "obj\\Debug\\net6.0\\staticwebassets\\msbuild.Bakalauras.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net6.0\\staticwebassets\\msbuild.build.Bakalauras.props",
+      "PackagePath": "build\\Bakalauras.props"
+    },
+    {
+      "Id": "obj\\Debug\\net6.0\\staticwebassets\\msbuild.buildMultiTargeting.Bakalauras.props",
+      "PackagePath": "buildMultiTargeting\\Bakalauras.props"
+    },
+    {
+      "Id": "obj\\Debug\\net6.0\\staticwebassets\\msbuild.buildTransitive.Bakalauras.props",
+      "PackagePath": "buildTransitive\\Bakalauras.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

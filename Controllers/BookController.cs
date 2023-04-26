@@ -26,21 +26,30 @@ namespace Bakalauras.Controllers
         private readonly IChaptersRepository _ChaptersRepository;
 
         public BookController(IBookRepository repo, IAuthorizationService authServise,
-            UserManager<BookieUser> userManager, IProfileRepository profileRepository,IChaptersRepository repp)
+            UserManager<BookieUser> userManager, IProfileRepository profileRepository, IChaptersRepository repp)
         {
             _BookRepository = repo;
             _AuthorizationService = authServise;
             _UserManager = userManager;
             _ProfileRepository = profileRepository;
-            _ChaptersRepository= repp;
+            _ChaptersRepository = repp;
         }
         [HttpGet]
-        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<IEnumerable<BookDtoToBuy>> GetMany(string GenreName)
+        [Route("finished")]
+        public async Task<IEnumerable<BookDtoToBuy>> GetManyFinished(string GenreName)
         {
             var books = await _BookRepository.GetManyAsync();
             return books.Select(x => new BookDtoToBuy(x.Id, x.Name, x.GenreName, x.Description, x.ChapterPrice, DateTime.Now,
-                x.UserId)).Where(y => y.GenreName == GenreName);
+                x.UserId,x.Author,x.CoverImagePath, x.IsFinished)).Where(y => y.GenreName == GenreName && y.IsFinished == 1);
+        }
+
+        [HttpGet]
+        [Route("unfinished")]
+        public async Task<IEnumerable<BookDtoToBuy>> GetManyUnFinished(string GenreName)
+        {
+            var books = await _BookRepository.GetManyAsync();
+            return books.Select(x => new BookDtoToBuy(x.Id, x.Name, x.GenreName, x.Description, x.ChapterPrice, DateTime.Now,
+                x.UserId, x.Author, x.CoverImagePath,x.IsFinished)).Where(y => y.GenreName == GenreName && y.IsFinished==0);
         }
 
         [HttpGet]
@@ -51,28 +60,39 @@ namespace Bakalauras.Controllers
             var book = await _BookRepository.GetAsync(bookId);
             if (book == null) return NotFound();
             return new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.ChapterPrice, book.Created,
-                book.UserId);
+                book.UserId,book.Author,book.CoverImagePath,book.IsFinished);
         }
 
         [HttpPost]
         [Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<BookDtoToBuy>> Create(CreateBookDto createBookDto, string GenreName)
+        public async Task<ActionResult<BookDtoToBuy>> Create([FromForm] CreateBookDto createBookDto, string GenreName)
         {
+            string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            var profile = await _ProfileRepository.GetAsync(userId);
+            string author = string.IsNullOrEmpty(profile.Name) || string.IsNullOrEmpty(profile.Surname) ?
+                "Autorius nežinomas" : profile.Name + ' ' + profile.Surname;
+
             var book = new Book
             {
                 Name = createBookDto.Name,
                 GenreName = GenreName,
                 Description = createBookDto.Description,
-                ChapterPrice = createBookDto.ChapterPrice,
-                BookPrice=createBookDto.BookPrice,
+                ChapterPrice = double.Parse(createBookDto.ChapterPrice),
+                BookPrice = double.Parse(createBookDto.BookPrice),
                 Created = DateTime.Now,
-                UserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+                UserId = userId,
+                Author = author,
             };
+
+            if (createBookDto.CoverImage != null)
+            {
+                book.CoverImagePath = await _BookRepository.SaveCoverImageBook(createBookDto.CoverImage);
+            }
 
             await _BookRepository.CreateAsync(book, GenreName);
 
             return Created("201", new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.ChapterPrice,
-                book.Created, book.UserId));
+                book.Created, book.UserId, book.Author, book.CoverImagePath,book.IsFinished));
         }
 
         [HttpPut]
@@ -96,7 +116,7 @@ namespace Bakalauras.Controllers
             await _BookRepository.UpdateAsync(book);
 
             return Ok(new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.ChapterPrice, book.Created,
-                book.UserId));
+                book.UserId, await _BookRepository.GetAuthorInfo(book.Id), book.CoverImagePath,book.IsFinished));
         }
 
         //[HttpDelete]
@@ -123,9 +143,9 @@ namespace Bakalauras.Controllers
                                 await _UserManager.FindByIdAsync((
                                 await _BookRepository.GetAsync(bookId)).UserId)).Id);
 
-            ProfileBook prbo = new ProfileBook { BookId = bookId, ProfileId = profile.Id,BoughtChapterList="" };
+            ProfileBook prbo = new ProfileBook { BookId = bookId, ProfileId = profile.Id, BoughtChapterList = "" };
 
-          //  if (profile.ProfileBooks == null) { profile.ProfileBooks = new List<ProfileBook>(); }
+            //  if (profile.ProfileBooks == null) { profile.ProfileBooks = new List<ProfileBook>(); }
 
             if (_ProfileRepository.WasBookSubscribed(prbo, profile))
             {
@@ -186,13 +206,13 @@ namespace Bakalauras.Controllers
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
 
-            ProfileBook prbo =await _ProfileRepository.GetProfileBookRecordSubscribed(bookId, profile.Id);
+            ProfileBook prbo = await _ProfileRepository.GetProfileBookRecordSubscribed(bookId, profile.Id);
 
             if (prbo == null)
-               return BadRequest("Knyga nebuvo prenumeruojama.");
+                return BadRequest("Knyga nebuvo prenumeruojama.");
 
             await _ProfileRepository.RemoveProfileBookAsync(prbo);
-           
+
 
             List<SubscribeToBookDto> books = (List<SubscribeToBookDto>)
                 await _BookRepository.GetUserSubscribedBooksAsync(profile);
@@ -219,7 +239,7 @@ namespace Bakalauras.Controllers
                 return BadRequest("Pirkiniui nepakanka taškų.");
             }
 
-            ProfileBook pb=new ProfileBook { BookId=bookId,ProfileId=profile.Id};
+            ProfileBook pb = new ProfileBook { BookId = bookId, ProfileId = profile.Id };
             pb.BoughtChapterList = _ProfileRepository.ConvertIdsToString(book.Chapters.Select(x => x.Id).ToList());
             pb.BoughtDate = DateTime.Now;
 

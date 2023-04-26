@@ -17,7 +17,6 @@ namespace Bakalauras.Controllers
             genreRepository = repo;
         }
         [HttpGet]
-        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<IEnumerable<GenreDto>> GetMany()
         {
             var genres = await genreRepository.GetManyAsync();

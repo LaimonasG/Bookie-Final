@@ -17,6 +17,10 @@ namespace Bakalauras.data.entities
         public double Price { get; set; }
 
         public string Content { get; set; }
+        public string? Description { get; set; }
+        public string? Author { get; set; }
+
+        public string? CoverImagePath { get; set; }
 
         public virtual ICollection<Comment>? Comments { get; set; }
 

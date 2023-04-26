@@ -7,6 +7,9 @@ namespace Bakalauras.data.entities
     public class Profile : IUserOwnedResource
     {
         public int Id { get; set; }
+        public string Name { get; set; }
+
+        public string Surname { get; set; }
         public double Points { get; set; }
         public byte[]? ProfilePicture { get; set; }
         public string? TextPurchaseDates { get; set; }
