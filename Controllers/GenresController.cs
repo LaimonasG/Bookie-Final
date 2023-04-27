@@ -16,10 +16,13 @@ namespace Bakalauras.Controllers
         {
             genreRepository = repo;
         }
+
         [HttpGet]
         public async Task<IEnumerable<GenreDto>> GetMany()
         {
+            Console.WriteLine("test before");
             var genres = await genreRepository.GetManyAsync();
+            Console.WriteLine("test after");
             return genres.Select(x => new GenreDto(x.Id,x.Name));
         }
 

@@ -8,6 +8,7 @@
     ".NETCoreApp,Version=v6.0": {
       "Bakalauras/1.0.0": {
         "dependencies": {
+          "AWSSDK.S3": "3.7.104.4",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "6.0.10",
           "Microsoft.AspNetCore.Identity": "2.2.0",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "6.0.10",
@@ -21,6 +22,25 @@
         },
         "runtime": {
           "Bakalauras.dll": {}
+        }
+      },
+      "AWSSDK.Core/3.7.106.26": {
+        "runtime": {
+          "lib/netcoreapp3.1/AWSSDK.Core.dll": {
+            "assemblyVersion": "3.3.0.0",
+            "fileVersion": "3.7.106.26"
+          }
+        }
+      },
+      "AWSSDK.S3/3.7.104.4": {
+        "dependencies": {
+          "AWSSDK.Core": "3.7.106.26"
+        },
+        "runtime": {
+          "lib/netcoreapp3.1/AWSSDK.S3.dll": {
+            "assemblyVersion": "3.3.0.0",
+            "fileVersion": "3.7.104.4"
+          }
         }
       },
       "Humanizer.Core/2.8.26": {
@@ -2696,6 +2716,20 @@
       "type": "project",
       "serviceable": false,
       "sha512": ""
+    },
+    "AWSSDK.Core/3.7.106.26": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Y+OwY/dtyKba+qsCsUCvjnH78xyBlUVxsHuo7GXlt2e82yikxkotg+fuz3KaYtn0bSLqcckhDBiXEITcJVtvLQ==",
+      "path": "awssdk.core/3.7.106.26",
+      "hashPath": "awssdk.core.3.7.106.26.nupkg.sha512"
+    },
+    "AWSSDK.S3/3.7.104.4": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-WMJOhLjI78UGhsr2FC9o7Ft8/5luW3EY9nQO1QLDZgk0hu0ocm4Le4fUmWjtxJPtrhgqfGn3tF0WlUCis1qWnA==",
+      "path": "awssdk.s3/3.7.104.4",
+      "hashPath": "awssdk.s3.3.7.104.4.nupkg.sha512"
     },
     "Humanizer.Core/2.8.26": {
       "type": "package",

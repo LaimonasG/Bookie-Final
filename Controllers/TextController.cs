@@ -24,15 +24,19 @@ namespace Bakalauras.Controllers
         private readonly UserManager<BookieUser> _UserManager;
         private readonly IProfileRepository _ProfileRepository;
         private readonly IAuthorizationService _AuthorizationService;
+        private readonly IConfiguration _configuration;
+        private readonly IBookRepository _BookRepository;
 
         public TextController(ITextRepository repo, IAuthorizationService authServise, UserManager<BookieUser> mng,
-            IProfileRepository pre, IChaptersRepository chrep)
+            IProfileRepository pre, IChaptersRepository chrep,IConfiguration conf,IBookRepository repob)
         {
             _Textrepostory = repo;
             _AuthorizationService = authServise;
             _ProfileRepository = pre;
             _UserManager = mng;
             _ChaptersRepository = chrep;
+            _configuration= conf;
+            _BookRepository = repob;
         }
 
         [HttpGet]
@@ -40,7 +44,7 @@ namespace Bakalauras.Controllers
         {
             var texts = await _Textrepostory.GetManyAsync(GenreName);
             return texts.Select(x => new TextDtoToBuy(x.Id, x.Name, x.GenreName,x.Description, x.Price,x.CoverImagePath,
-                x.Author, DateTime.Now, x.UserId)).Where(y => y.GenreName == GenreName);
+                x.Author, x.Created, x.UserId)).Where(y => y.GenreName == GenreName);
         }
 
         [HttpGet]
@@ -69,11 +73,17 @@ namespace Bakalauras.Controllers
             }
             
             Text text = new Text { Name = dto.Name, GenreName=genreName, Content = content,Price=double.Parse(dto.Price),
-                UserId = user.Id,Author=author,Description=dto.Description};
+                UserId = user.Id,Author=author,Description=dto.Description,Created=DateTime.Now};
 
             if (dto.CoverImage != null)
             {
-                text.CoverImagePath = await _Textrepostory.SaveCoverImageText(dto.CoverImage);
+                using (Stream imageStream = dto.CoverImage.OpenReadStream())
+                {
+                    string objectKey = $"images/{dto.CoverImage.FileName}";
+                    text.CoverImagePath = await _BookRepository.UploadImageToS3Async(imageStream,
+                        _configuration["AWS:BucketName"], objectKey, _configuration["AWS:AccessKey"],
+                        _configuration["AWS:SecretKey"]);
+                }
             }
 
 

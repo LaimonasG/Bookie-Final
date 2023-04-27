@@ -8,6 +8,10 @@ using Bakalauras.Auth.Model;
 using System.IdentityModel.Tokens.Jwt;
 using System.Collections.Generic;
 using static System.Reflection.Metadata.BlobBuilder;
+using Amazon;
+using Amazon.S3;
+using Amazon.S3.Model;
+using Amazon.S3.Transfer;
 
 namespace Bakalauras.data.repositories
 {
@@ -23,8 +27,7 @@ namespace Bakalauras.data.repositories
         Task<bool> CheckIfUserHasBook(string userId, int bookId);
         Task<List<BookDtoBought>> ConvertBooksToBookDtoBoughtList(List<Book> books);
         Task<string> GetAuthorInfo(int bookId);
-
-        Task<string> SaveCoverImageBook(IFormFile coverImage);
+        Task<string> UploadImageToS3Async(Stream imageStream, string bucketName, string objectKey, string accessKey, string secretKey);
     }
 
     public class BookRepository : IBookRepository
@@ -32,6 +35,7 @@ namespace Bakalauras.data.repositories
         private readonly BookieDBContext _BookieDBContext;
         private readonly IProfileRepository _ProfileRepository;
         private readonly IChaptersRepository _ChaptersRepository;
+
 
         public BookRepository(BookieDBContext context, IProfileRepository profileRepository,
             IChaptersRepository chaptersRepository)
@@ -102,7 +106,8 @@ namespace Bakalauras.data.repositories
             var profile = await _ProfileRepository.GetAsync(userId);
             var profileBook= await _BookieDBContext.ProfileBooks
            .SingleOrDefaultAsync(x => x.BookId == bookId && x.ProfileId == profile.Id);
-            if (profileBook == null) return false;
+            var book = await GetAsync(bookId);
+            if (profileBook == null && (book.UserId !=userId)) return false;
             return true;
         }
 
@@ -142,32 +147,29 @@ namespace Bakalauras.data.repositories
             return rez;
         }
 
-        public async Task<string> SaveCoverImageBook(IFormFile coverImage)
+        public async Task<string> UploadImageToS3Async(Stream imageStream, string bucketName, string objectKey, string accessKey, string secretKey)
         {
-            if (coverImage == null || coverImage.Length == 0)
+            // Create an Amazon S3 client using the access key and secret key
+            var s3Client = new AmazonS3Client(accessKey, secretKey, RegionEndpoint.EUNorth1); 
+
+            // Create a TransferUtility to handle the upload
+            var transferUtility = new TransferUtility(s3Client);
+
+            // Create a TransferUtilityUploadRequest with the bucket name and object key
+            var uploadRequest = new TransferUtilityUploadRequest
             {
-                return null;
-            }
+                InputStream = imageStream,
+                BucketName = bucketName,
+                Key = objectKey,
+            };
 
-            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(coverImage.FileName);
-            var filePath = Path.Combine("../bookie-ui-vite/bookie/public/BookImages", fileName);
+            // Upload the image
+            await transferUtility.UploadAsync(uploadRequest);
 
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                await coverImage.CopyToAsync(fileStream);
-            }
+            // Get the URL of the uploaded image
+            string imageUrl = $"https://{bucketName}.s3.amazonaws.com/{objectKey}";
 
-            return "/BookImages/" + fileName;
+            return imageUrl;
         }
-
-        //public async Task<List<Book>> GetFinishedBooks(string genreName)
-        //{
-        //    return await _BookieDBContext.Books.Where(x=>x.IsFinished==1 && x.GenreName==genreName).ToListAsync();
-        //}
-
-        //public async Task<List<Book>> GetUnFinishedBooks(string genreName)
-        //{
-        //    return await _BookieDBContext.Books.Where(x => x.IsFinished == 0 && x.GenreName == genreName).ToListAsync();
-        //}
     }
 }

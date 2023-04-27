@@ -18,21 +18,24 @@ namespace Bakalauras.Controllers
     [ApiController]
     [Route("api/genres/{GenreName}/books")]
     public class BookController : ControllerBase
-    {
-        private readonly IBookRepository _BookRepository;
+    {    
         private readonly IAuthorizationService _AuthorizationService;
         private readonly UserManager<BookieUser> _UserManager;
         private readonly IProfileRepository _ProfileRepository;
         private readonly IChaptersRepository _ChaptersRepository;
+        private readonly IConfiguration _configuration;
+        private readonly IBookRepository _BookRepository;
 
         public BookController(IBookRepository repo, IAuthorizationService authServise,
-            UserManager<BookieUser> userManager, IProfileRepository profileRepository, IChaptersRepository repp)
+            UserManager<BookieUser> userManager, IProfileRepository profileRepository, IChaptersRepository repp,
+            IConfiguration conf)
         {
             _BookRepository = repo;
             _AuthorizationService = authServise;
             _UserManager = userManager;
             _ProfileRepository = profileRepository;
             _ChaptersRepository = repp;
+            _configuration = conf;
         }
         [HttpGet]
         [Route("finished")]
@@ -86,7 +89,13 @@ namespace Bakalauras.Controllers
 
             if (createBookDto.CoverImage != null)
             {
-                book.CoverImagePath = await _BookRepository.SaveCoverImageBook(createBookDto.CoverImage);
+                using (Stream imageStream = createBookDto.CoverImage.OpenReadStream())
+                {
+                    string objectKey = $"images/{createBookDto.CoverImage.FileName}";
+                    book.CoverImagePath = await _BookRepository.UploadImageToS3Async(imageStream,
+                        _configuration["AWS:BucketName"], objectKey, _configuration["AWS:AccessKey"],
+                        _configuration["AWS:SecretKey"]);
+                }
             }
 
             await _BookRepository.CreateAsync(book, GenreName);

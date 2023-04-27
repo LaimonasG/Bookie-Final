@@ -5,11 +5,6 @@ namespace Bakalauras.data.entities
 {
     public class Chapter: IUserOwnedResource
     {
-        private int _Id;
-        private string _Name;
-        private string _Content;
-        private int _BookId;
-
         public int Id { get; set; }
         [Required]
         public int BookId { get; set; }

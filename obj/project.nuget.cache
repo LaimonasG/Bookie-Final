@@ -1,9 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "Wj4u2YGJrwJABWHxtEbO5tVixVrihaa5mDeUe6/uYPdEnrkKYRtHGl6udj4PpcqysYW3HFBsbySfvV3q1ph7DQ==",
+  "dgSpecHash": "7jvzQfAOhIFZJFxKTo9/XO58vfzS0Q+WSmYp4YYxE53mEMcEHA58xJPvPAPbqrcnlJxKH9vTHwrkxeF0YMWuyA==",
   "success": true,
   "projectFilePath": "D:\\laimi\\Bakalauras\\BookieAPI\\Bakalauras.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\laimi\\.nuget\\packages\\awssdk.core\\3.7.106.26\\awssdk.core.3.7.106.26.nupkg.sha512",
+    "C:\\Users\\laimi\\.nuget\\packages\\awssdk.s3\\3.7.104.4\\awssdk.s3.3.7.104.4.nupkg.sha512",
     "C:\\Users\\laimi\\.nuget\\packages\\humanizer.core\\2.8.26\\humanizer.core.2.8.26.nupkg.sha512",
     "C:\\Users\\laimi\\.nuget\\packages\\itext7\\7.2.5\\itext7.7.2.5.nupkg.sha512",
     "C:\\Users\\laimi\\.nuget\\packages\\itext7.commons\\7.2.5\\itext7.commons.7.2.5.nupkg.sha512",

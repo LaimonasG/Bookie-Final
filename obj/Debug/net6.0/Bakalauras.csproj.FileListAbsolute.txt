@@ -578,3 +578,5 @@ D:\laimi\Bakalauras\BookieAPI\obj\Debug\net6.0\refint\Bakalauras.dll
 D:\laimi\Bakalauras\BookieAPI\obj\Debug\net6.0\Bakalauras.pdb
 D:\laimi\Bakalauras\BookieAPI\obj\Debug\net6.0\Bakalauras.genruntimeconfig.cache
 D:\laimi\Bakalauras\BookieAPI\obj\Debug\net6.0\ref\Bakalauras.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\AWSSDK.Core.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\AWSSDK.S3.dll

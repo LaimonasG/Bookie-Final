@@ -1,9 +1,11 @@
-﻿namespace Bakalauras.data.dtos
+﻿using Microsoft.AspNetCore.Mvc;
+
+namespace Bakalauras.data.dtos
 {
     public class ChaptersDto
     {
-        public record GetChapterDto(int chapterId, string name, string content,int bookId);
-        public record CreateChapterDto(string name, string content);
+        public record GetChapterDto(string name, string content,int bookId);
+        public record CreateChapterDto(IFormFile File,string Name,string IsFinished);
         public record UpdateChapterDto(string? name, string? content);
 
     }
