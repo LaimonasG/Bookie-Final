@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Bakalauras.data.dtos
 {
-    public record  CreateQuestionDto(string Question, double Points, List<AnswerDto> Answers);
+    public record  CreateQuestionDto(string Question, double Points,DateTime DateToRelease, List<Answer> Answers);
     public record DailyQuestionDto(string Question, double points, List<Answer> answers);
 
     public record AnswerDto(string content, int correct);

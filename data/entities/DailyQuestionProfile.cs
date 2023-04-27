@@ -12,5 +12,6 @@ namespace Bakalauras.data.entities
         public DailyQuestion DailyQuestion { get; set; }
 
         public bool IsCorrect { get; set; }
+        public DateTime DateAnswered { get; set; }
     }
 }

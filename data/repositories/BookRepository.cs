@@ -149,8 +149,11 @@ namespace Bakalauras.data.repositories
 
         public async Task<string> UploadImageToS3Async(Stream imageStream, string bucketName, string objectKey, string accessKey, string secretKey)
         {
+            // Generate a unique object key by adding a GUID prefix
+            objectKey = $"{Guid.NewGuid().ToString()}_{objectKey}";
+
             // Create an Amazon S3 client using the access key and secret key
-            var s3Client = new AmazonS3Client(accessKey, secretKey, RegionEndpoint.EUNorth1); 
+            var s3Client = new AmazonS3Client(accessKey, secretKey, RegionEndpoint.EUNorth1);
 
             // Create a TransferUtility to handle the upload
             var transferUtility = new TransferUtility(s3Client);
@@ -161,13 +164,14 @@ namespace Bakalauras.data.repositories
                 InputStream = imageStream,
                 BucketName = bucketName,
                 Key = objectKey,
+                CannedACL = S3CannedACL.PublicRead,
             };
 
             // Upload the image
             await transferUtility.UploadAsync(uploadRequest);
 
             // Get the URL of the uploaded image
-            string imageUrl = $"https://{bucketName}.s3.amazonaws.com/{objectKey}";
+            string imageUrl = $"https://{bucketName}.s3.eu-north-1.amazonaws.com/{objectKey}";
 
             return imageUrl;
         }

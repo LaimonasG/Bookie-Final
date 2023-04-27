@@ -13,13 +13,14 @@ namespace Bakalauras.data.repositories
         Task CreateAnswers(List<Answer> answers);
         Task<int> CreateQuestion(DailyQuestion question);
         Task DeleteAsync(DailyQuestion question);
-        Task<DailyQuestion?> GetRandomAsync();
+        Task<CreateQuestionDto?> GetQuestionAsync(DateTime date);
         Task<DailyQuestion?> GetAsync(int id);
         Task<IReadOnlyList<DailyQuestion>> GetManyAsync();
         Task UpdateAsync(DailyQuestion question);
         Task<AnswerDto> AnswerQuestion(int questionId, int answerId, string userId);
         Task<Answer> GetCorrectAsnwer(DailyQuestion question);
         List<Answer> UpdateAnswers(List<AnswerDto> answers, int questionId);
+        Task<DateTime> WhenWasQuestionAnswered(string userId);
     }
     public class DailyQuestionRepository : IDailyQuestionRepository
     {
@@ -31,13 +32,23 @@ namespace Bakalauras.data.repositories
             _ProfileRepository = repp;
         }
 
-        public async Task<DailyQuestion?> GetRandomAsync()
+        public async Task<CreateQuestionDto?> GetQuestionAsync(string DateString)
         {
             var questions=await GetManyAsync();
-            Random random = new Random();
-            int randomIndex = random.Next(questions.Count);
-            DailyQuestion randomItem = questions[randomIndex];
-            return randomItem;
+            DateTime date = DateTime.Parse(DateString);
+            DailyQuestion rez = questions.Where(x => x.Date.Day == date.Day).FirstOrDefault();
+            CreateQuestionDto result = new CreateQuestionDto
+            (
+                rez.Question,
+                rez.Points,
+                rez.Date,
+                new List<Answer>()
+            );
+            var answers = await _BookieDBContext.Answers.Where(x => x.QuestionId == rez.Id).ToListAsync();
+            result.Answers.AddRange(answers);
+
+            if (rez != null) { return null; }
+            return result;
         }
 
         public async Task<DailyQuestion?> GetAsync(int id)
@@ -94,6 +105,7 @@ namespace Bakalauras.data.repositories
             }
             else { dqp.IsCorrect = false; }
 
+            dqp.DateAnswered = DateTime.Now;
             _BookieDBContext.DailyQuestionProfiles.Add(dqp);
             _BookieDBContext.Profiles.Update(userProfile);
 
@@ -120,6 +132,15 @@ namespace Bakalauras.data.repositories
                 });
             }
             return rez;
+        }
+
+        public async Task<DateTime> WhenWasQuestionAnswered(string userId)
+        {
+            Profile profile=await _ProfileRepository.GetAsync(userId);
+            var dqp = await _BookieDBContext.DailyQuestionProfiles
+                      .OrderByDescending(x => x.DateAnswered)
+                      .FirstOrDefaultAsync(x => x.ProfileId == profile.Id);
+            return dqp.DateAnswered;
         }
     }
 }

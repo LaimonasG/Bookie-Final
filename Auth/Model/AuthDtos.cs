@@ -11,4 +11,6 @@ namespace Bakalauras.Auth
     public record UserBlockedDto(string Id, string UserName,bool isBlocked);
 
     public record SuccessfulLoginDto(string AccessToken);
+
+    public record RefreshTokenDto(string AccessToken);
 }

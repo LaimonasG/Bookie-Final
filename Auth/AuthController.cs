@@ -81,8 +81,31 @@ namespace Bakalauras.Controllers
             });
 
             return Ok(new SuccessfulLoginDto(accessToken));
+        }
 
+        [HttpPost]
+        [Route("refresh-token")]
+        [Authorize(Roles = BookieRoles.BookieUser)]
+        public async Task<ActionResult> RefreshToken([FromBody] string refreshTokenDto)
+        {
+            var user = await _JwtTokenService.GetUserByRefreshTokenAsync(refreshTokenDto);
+            if (user == null)
+                return BadRequest("Invalid refresh token.");
 
+            var roles = await _UserManager.GetRolesAsync(user);
+            var accessToken = _JwtTokenService.CreateAccessToken(user.UserName, user.Id, roles);
+
+            var newRefreshToken = _JwtTokenService.CreateRefreshToken();
+
+            await _JwtTokenService.UpdateRefreshTokenAsync(user, refreshTokenDto, newRefreshToken);
+
+            Response.Cookies.Append("refreshToken", newRefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = DateTimeOffset.UtcNow.AddDays(7)
+            });
+
+            return Ok(new RefreshTokenDto(accessToken));
         }
 
         [HttpPut]

@@ -35,24 +35,34 @@ namespace Bakalauras.Controllers
 
         [HttpGet]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<DailyQuestion>> Get()
+        public async Task<ActionResult<CreateQuestionDto>> GetTodaysQuestion(DateTime date)
         {
-            var question = await _DailyQuestionRepository.GetRandomAsync();
-            if (question == null) return NotFound();
+            var question = await _DailyQuestionRepository.GetQuestionAsync(date);
+            if (question == null) return BadRequest("No question for this date!");
             return question;
         }
 
-        //[HttpPost]
-        //public async Task<DailyQuestionDto> Create(CreateQuestionDto dto)
-        //{
-        //    DailyQuestion q = new DailyQuestion { Question = dto.Question, Points = dto.Points };
-        //    int questionId= await _DailyQuestionRepository.CreateQuestion(q);
-        //    var answers = _DailyQuestionRepository.UpdateAnswers(dto.Answers,questionId);
+        [HttpGet]
+        [Route("/time")]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<DateTime>> GetLastAnswerTime()
+        {
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            DateTime result = await _DailyQuestionRepository.WhenWasQuestionAnswered(user.Id);
+            return Ok(result);
+        }
 
-        //   await _DailyQuestionRepository.CreateAnswers(answers);
+        [HttpPost]
+        public async Task<DailyQuestionDto> Create(CreateQuestionDto dto)
+        {
+            DailyQuestion q = new DailyQuestion { Question = dto.Question, Points = dto.Points,Date=dto.DateToRelease };
+            int questionId = await _DailyQuestionRepository.CreateQuestion(q);
+            var answers = _DailyQuestionRepository.UpdateAnswers(dto.Answers, questionId);
 
-        //    return new DailyQuestionDto(q.Question, q.Points, answers);
-        //}
+            await _DailyQuestionRepository.CreateAnswers(answers);
+
+            return new DailyQuestionDto(q.Question, q.Points, answers);
+        }
 
         [HttpPut]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
