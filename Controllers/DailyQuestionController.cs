@@ -25,31 +25,27 @@ namespace Bakalauras.Controllers
             _DailyQuestionRepository = repd;
             _UserManager = userMng;
         }
-        //[HttpGet]
-        //[Route("/all")]
-        //[Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        //public async Task<IEnumerable<DailyQuestion>> GetMany()
-        //{
-        //    return await _DailyQuestionRepository.GetManyAsync();
-        //}
+
+            [HttpGet]
+            [Route("{date}")]
+            [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+            public async Task<ActionResult<GetQuestionDto>> GetTodaysQuestion(string date)
+            {
+                var question = await _DailyQuestionRepository.GetQuestionAsync(date);
+                return Ok(question);
+            }
 
         [HttpGet]
-        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<CreateQuestionDto>> GetTodaysQuestion(DateTime date)
-        {
-            var question = await _DailyQuestionRepository.GetQuestionAsync(date);
-            if (question == null) return BadRequest("No question for this date!");
-            return question;
-        }
-
-        [HttpGet]
-        [Route("/time")]
+        [Route("time")]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<ActionResult<DateTime>> GetLastAnswerTime()
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            DateTime result = await _DailyQuestionRepository.WhenWasQuestionAnswered(user.Id);
-            return Ok(result);
+            var result = await _DailyQuestionRepository.WhenWasQuestionAnswered(user.Id);
+            if (result.Item1){
+                return Ok(result);
+            }
+            return Ok(new DateTime());
         }
 
         [HttpPost]
@@ -69,9 +65,15 @@ namespace Bakalauras.Controllers
         public async Task<ActionResult<AnswerDto>> AnswerQuestion(AnswerQuestionDto dto)
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            AnswerDto result = await _DailyQuestionRepository.AnswerQuestion(dto.QuestionID,dto.AnswerID, user.Id);
-
-            return Ok(result);
+            var result = await _DailyQuestionRepository.AnswerQuestion(dto.QuestionID,dto.AnswerID, user.Id);
+            if (result.Item1)
+            {
+                return Ok(result.Item2);
+            }
+            else
+            {
+                return BadRequest(result.Item2);
+            }
         }
     }
 }

@@ -2,6 +2,7 @@
 using Bakalauras.data.dtos;
 using Bakalauras.data.entities;
 using Bakalauras.Migrations;
+using iText.Commons.Actions.Contexts;
 using iText.Layout.Element;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -56,6 +57,8 @@ namespace Bakalauras.data.repositories
         Task PayForPoints(Profile userWallet, Payment payment);
 
         Task<Payment> GetPayment(int paymentId);
+
+        Task<List<BookDtoBought>> GetBookList(List<ProfileBook> prbo);
     }
     public class ProfileRepository : IProfileRepository
     {
@@ -108,29 +111,29 @@ namespace Bakalauras.data.repositories
             bool badUsername = false;
             bool badName = false;
             bool badSurname = false;
-            string usernameEmailError = "Vartotojo vardo ir elektroninio pašto formatai neteisingi.";
-            string usernameError = "Vartotojo vardo formatas neteisingas.";
+            string UsernameEmailError = "Vartotojo vardo ir elektroninio pašto formatai neteisingi.";
+            string UsernameError = "Vartotojo vardo formatas neteisingas.";
             string nameError = "Vardo formatas neteisingas.";
             string surnameError = "Pavardės formatas neteisingas.";
             string emailError = "Elektroninio pašto formatas neteisingas.";
 
-            if (dto.userName != null)
+            if (dto.Username != null)
             {
-                if (dto.userName.Length > 25 || Regex.IsMatch(dto.userName, @"[^a-zA-Z0-9]"))
+                if (dto.Username.Length > 25 || Regex.IsMatch(dto.Username, @"[^a-zA-Z0-9]"))
                 {
                     badUsername = true;
                 }
-                user.UserName = dto.userName;
-                user.NormalizedUserName = dto.userName.ToUpper();
+                user.UserName = dto.Username;
+                user.NormalizedUserName = dto.Username.ToUpper();
             }
-            if (dto.email != null)
+            if (dto.Email != null)
             {
-                if (!Regex.IsMatch(dto.email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                if (!Regex.IsMatch(dto.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
                 {
                     badEmail = true;
                 }
-                user.Email = dto.email;
-                user.NormalizedEmail = dto.email;
+                user.Email = dto.Email;
+                user.NormalizedEmail = dto.Email;
             }
             if (dto.Name != null)
             {
@@ -148,9 +151,9 @@ namespace Bakalauras.data.repositories
                 }
                 profile.Surname = dto.Surname;
             }
-            if (badEmail && badUsername) { return usernameEmailError; }
+            if (badEmail && badUsername) { return UsernameEmailError; }
             else if (badEmail) { return emailError; }
-            else if (badUsername) { return usernameError; }
+            else if (badUsername) { return UsernameError; }
             else if (badName) { return nameError; }
             else if (badSurname) { return surnameError; }
 
@@ -381,6 +384,38 @@ namespace Bakalauras.data.repositories
             await UpdateAsync(userWallet);
             _BookieDBContext.PaymentUsers.Add(pu);
             await _BookieDBContext.SaveChangesAsync();
+        }
+
+        public async Task<List<BookDtoBought>> GetBookList(List<ProfileBook> prbo)
+        {
+            var bookIds = prbo.Select(pb => pb.BookId).ToList();
+
+            var books = _BookieDBContext.Books.Include(b => b.Chapters)
+                                      .Where(x => bookIds.Contains(x.Id))
+                                      .ToList();
+            List<BookDtoBought> result = new List<BookDtoBought>();
+            foreach (Book book in books)
+            {
+
+                var temp = new BookDtoBought(
+           book.Id,
+           book.Name,
+           book.Chapters,
+           book.GenreName,
+           book.Description,
+           book.BookPrice,
+           book.Created,
+           book.UserId,
+           book.Author,
+           book.CoverImagePath,
+           book.IsFinished
+              );
+                result.Add(temp);
+
+            }
+
+            return result;
+           
         }
     }
 }

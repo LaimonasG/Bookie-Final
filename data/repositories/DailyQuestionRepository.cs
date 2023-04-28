@@ -13,14 +13,14 @@ namespace Bakalauras.data.repositories
         Task CreateAnswers(List<Answer> answers);
         Task<int> CreateQuestion(DailyQuestion question);
         Task DeleteAsync(DailyQuestion question);
-        Task<CreateQuestionDto?> GetQuestionAsync(DateTime date);
+        Task<GetQuestionDto?> GetQuestionAsync(string date);
         Task<DailyQuestion?> GetAsync(int id);
         Task<IReadOnlyList<DailyQuestion>> GetManyAsync();
         Task UpdateAsync(DailyQuestion question);
-        Task<AnswerDto> AnswerQuestion(int questionId, int answerId, string userId);
+        Task<(bool, object)> AnswerQuestion(int questionId, int answerId, string userId);
         Task<Answer> GetCorrectAsnwer(DailyQuestion question);
-        List<Answer> UpdateAnswers(List<AnswerDto> answers, int questionId);
-        Task<DateTime> WhenWasQuestionAnswered(string userId);
+        List<Answer> UpdateAnswers(List<Answer> answers, int questionId);
+        Task<(bool, object)> WhenWasQuestionAnswered(string userId);
     }
     public class DailyQuestionRepository : IDailyQuestionRepository
     {
@@ -32,22 +32,24 @@ namespace Bakalauras.data.repositories
             _ProfileRepository = repp;
         }
 
-        public async Task<CreateQuestionDto?> GetQuestionAsync(string DateString)
+        public async Task<GetQuestionDto?> GetQuestionAsync(string DateString)
         {
-            var questions=await GetManyAsync();
+            var questions = await GetManyAsync();
             DateTime date = DateTime.Parse(DateString);
-            DailyQuestion rez = questions.Where(x => x.Date.Day == date.Day).FirstOrDefault();
-            CreateQuestionDto result = new CreateQuestionDto
+            DailyQuestion rez = questions.Where(x => x.Date.Year == date.Year && x.Date.Month == date.Month && x.Date.Day == date.Day).FirstOrDefault();
+            if (rez == null) { return null; }
+            GetQuestionDto result = new GetQuestionDto
             (
+                rez.Id,
                 rez.Question,
                 rez.Points,
                 rez.Date,
                 new List<Answer>()
-            );
+            ) ;
             var answers = await _BookieDBContext.Answers.Where(x => x.QuestionId == rez.Id).ToListAsync();
             result.Answers.AddRange(answers);
 
-            if (rez != null) { return null; }
+            
             return result;
         }
 
@@ -86,18 +88,22 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
-        public async Task<AnswerDto> AnswerQuestion(int questionId, int answerId, string userId)
+        public async Task<(bool, object)> AnswerQuestion(int questionId, int answerId, string userId)
         {
             var question = await GetAsync(questionId);
-            if (question == null) { return null; }
+            if (question == null) { return (false, "Question not found"); }
             var trueAnswer = await GetCorrectAsnwer(question);
-            if (trueAnswer == null) { return null; }
+            if (trueAnswer == null) { return (false, "Correct answer not found"); }
             var userProfile = await _ProfileRepository.GetAsync(userId);
-            if (userProfile == null) { return null; }
-            var answer= await _BookieDBContext.Answers.FirstOrDefaultAsync(x => x.Id == answerId);
-            if (answer == null) { return null; }
+            if (userProfile == null) { return (false, "User profile not found"); }
+            var answer = await _BookieDBContext.Answers.FirstOrDefaultAsync(x => x.Id == answerId);
+            if (answer == null) { return (false, "Answer not found"); }
 
-            DailyQuestionProfile dqp=new DailyQuestionProfile { DailyQuestionId= question.Id,ProfileId=userProfile.Id };
+            DailyQuestionProfile dqp = new DailyQuestionProfile { DailyQuestionId = question.Id, ProfileId = userProfile.Id };
+
+            var existingDqp = await _BookieDBContext.DailyQuestionProfiles.FirstOrDefaultAsync(x => x.DailyQuestionId == dqp.DailyQuestionId && x.ProfileId == dqp.ProfileId);
+            if (existingDqp != null) { return (false, "Question already answered"); }
+
             if (answer == trueAnswer)
             {
                 userProfile.Points += question.Points;
@@ -111,7 +117,7 @@ namespace Bakalauras.data.repositories
 
             await _BookieDBContext.SaveChangesAsync();
             AnswerDto result = new AnswerDto(trueAnswer.Content, dqp.IsCorrect ? 1 : 0);
-            return result;
+            return (true, result);
         }
 
         public async Task<Answer> GetCorrectAsnwer(DailyQuestion question)
@@ -119,28 +125,30 @@ namespace Bakalauras.data.repositories
             return await _BookieDBContext.Answers.FirstOrDefaultAsync(x => x.QuestionId == question.Id && x.Correct==1);
         }
 
-        public List<Answer> UpdateAnswers(List<AnswerDto> answers, int questionId)
+        public List<Answer> UpdateAnswers(List<Answer> answers, int questionId)
         {
             List<Answer> rez=new List<Answer>();
             foreach (var ans in answers)
             {
                 rez.Add(new Answer
                 {
-                    Content = ans.content,
+                    Content = ans.Content,
                     QuestionId = questionId,
-                    Correct = ans.correct
+                    Correct = ans.Correct
                 });
             }
             return rez;
         }
 
-        public async Task<DateTime> WhenWasQuestionAnswered(string userId)
+        public async Task<(bool, object)> WhenWasQuestionAnswered(string userId)
         {
             Profile profile=await _ProfileRepository.GetAsync(userId);
             var dqp = await _BookieDBContext.DailyQuestionProfiles
                       .OrderByDescending(x => x.DateAnswered)
                       .FirstOrDefaultAsync(x => x.ProfileId == profile.Id);
-            return dqp.DateAnswered;
+
+            if (dqp != null) { return (true, dqp.DateAnswered); }
+            return (false, "Question wasn't answered yet");
         }
     }
 }

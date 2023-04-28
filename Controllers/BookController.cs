@@ -249,6 +249,8 @@ namespace Bakalauras.Controllers
             }
 
             ProfileBook pb = new ProfileBook { BookId = bookId, ProfileId = profile.Id };
+            var chapters = await _ChaptersRepository.GetManyAsync(bookId);
+            book.Chapters = (List<Chapter>)chapters;
             pb.BoughtChapterList = _ProfileRepository.ConvertIdsToString(book.Chapters.Select(x => x.Id).ToList());
             pb.BoughtDate = DateTime.Now;
 
@@ -259,7 +261,7 @@ namespace Bakalauras.Controllers
             await _ProfileRepository.UpdateAsync(profile);
             await _ProfileRepository.UpdateAsync(authorProfile);
 
-            //testavimui, reiks istrint
+            //for testing
             List<SubscribeToBookDto> books = (List<SubscribeToBookDto>)
                 await _BookRepository.GetUserSubscribedBooksAsync(profile);
 

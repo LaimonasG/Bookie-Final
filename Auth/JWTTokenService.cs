@@ -14,9 +14,6 @@ namespace Bakalauras.Auth;
 public interface IJwtTokenService
 {
     string CreateAccessToken(string username, string userId, IEnumerable<string> roles);
-    string CreateRefreshToken();
-    Task UpdateRefreshTokenAsync(BookieUser user, string oldRefreshToken, string newRefreshToken);
-    Task<BookieUser> GetUserByRefreshTokenAsync(string refreshToken);
 }
 
 public class JwtTokenService : IJwtTokenService
@@ -54,30 +51,5 @@ public class JwtTokenService : IJwtTokenService
         ) ;
 
         return new JwtSecurityTokenHandler().WriteToken(accessSecurityToken);
-    }
-
-    public string CreateRefreshToken()
-    {
-        var randomNumber = new byte[32];
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(randomNumber);
-            return Convert.ToBase64String(randomNumber);
-        }
-    }
-
-    public async Task<BookieUser> GetUserByRefreshTokenAsync(string refreshToken)
-    {
-        return await _Context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
-    }
-
-    public async Task UpdateRefreshTokenAsync(BookieUser user, string oldRefreshToken, string newRefreshToken)
-    {
-        if (user.RefreshToken != oldRefreshToken)
-            throw new InvalidOperationException("The provided refresh token does not match the user's refresh token.");
-
-        user.RefreshToken = newRefreshToken;
-        _Context.Update(user);
-        await _Context.SaveChangesAsync();
     }
 }

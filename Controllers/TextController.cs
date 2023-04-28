@@ -170,7 +170,7 @@ namespace Bakalauras.Controllers
             await _ProfileRepository.UpdateAsync(authorProfile);
             await _Textrepostory.CreateProfileTextAsync(prte);
 
-            List<Text> texts = (List<Text>)await _Textrepostory.GetUserBoughtTextsAsync(profile);
+            List<Text> texts = await _Textrepostory.GetUserBoughtTextsAsync(user.Id);
 
             return Ok(new ProfileTextsDto(user.Id, user.UserName, texts));
         }

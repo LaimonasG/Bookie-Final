@@ -28,27 +28,16 @@ namespace Bakalauras.Controllers
         private readonly ITextRepository _Textrepostory;
 
         public ProfileController(IProfileRepository repo, IAuthorizationService authService,
-            UserManager<BookieUser> userManager,IBookRepository repob,IChaptersRepository chrep)
+            UserManager<BookieUser> userManager,IBookRepository repob,IChaptersRepository chrep,
+            ITextRepository rept)
         {
             _ProfileRepository = repo;
             _AuthorizationService = authService;
             _UserManager = userManager;
             _BookRepository = repob;
             _ChaptersRepository = chrep;
+            _Textrepostory=rept;
         }
-        //[HttpGet]
-        //[Route("all")]
-        //public async Task<IEnumerable<ProfileDto>> GetMany()
-        //{
-        //    var profiles = await _ProfileRepository.GetManyAsync();
-
-        //    var usersAndProfiles = from profile in profiles
-        //                           join user in _UserManager.Users
-        //                           on profile.UserId equals user.Id
-        //                           select new { User = user, Profile = profile };
-
-        //    return usersAndProfiles.Select(x => new ProfileDto(x.User.Id,x.User.UserName,x.User.Email,x.Profile.Points));
-        //}
 
         [HttpGet]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
@@ -58,22 +47,48 @@ namespace Bakalauras.Controllers
             var profile = await _ProfileRepository.GetAsync(user.Id);
             if (profile == null) return NotFound();
 
-            return new ProfileDto(user.Id, user.UserName, user.Email, profile.Points);
+            return new ProfileDto(user.Id,profile.Name,profile.Surname, user.UserName, user.Email, profile.Points);
         }
 
         [HttpGet]
-        [Route("picture")]
-        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<ProfileDto>> GetProfilePicture()
+        [Route("books")]
+        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<List<BookDtoBought>>> GetReaderBooks()
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
+            var profileBooks =  _ProfileRepository.GetProfileBooks(profile);
+            var result = await _ProfileRepository.GetBookList(profileBooks);
             if (profile == null) return NotFound();
 
-            if (profile.ProfilePicture == null) { return NotFound(); }
-
-            return Ok(File(profile.ProfilePicture, "image/png"));
+            return Ok(result);
         }
+
+        [HttpGet]
+        [Route("texts")]
+        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<List<BookDtoBought>>> GetReaderTexts()
+        {
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            var result = await _Textrepostory.GetUserBoughtTextsAsync(user.Id);
+            if (result == null) return NotFound();
+
+            return Ok(result);
+        }
+
+        //[HttpGet]
+        //[Route("picture")]
+        //[Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        //public async Task<ActionResult<ProfileDto>> GetProfilePicture()
+        //{
+        //    var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+        //    var profile = await _ProfileRepository.GetAsync(user.Id);
+        //    if (profile == null) return NotFound();
+
+        //    if (profile.ProfilePicture == null) { return NotFound(); }
+
+        //    return Ok(File(profile.ProfilePicture, "image/png"));
+        //}
 
         [HttpGet]
         [Route("paymentOffers")]
@@ -102,19 +117,6 @@ namespace Bakalauras.Controllers
             return Ok(_ProfileRepository.GetProfilePurchases(profile));
         }
 
-        //[HttpGet]
-        //[Route("{userId}/payments")]
-        //[Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        //public async Task<ActionResult<ProfilePurchacesDto>> GetReaderPaymentHistory(string userId)
-        //{
-        //    var user = await _UserManager.FindByIdAsync(userId);
-        //    var profile = await _ProfileRepository.GetAsync(user.Id);
-
-        //    if (profile == null) return NotFound();
-
-        //    return Ok(_ProfileRepository.GetProfilePurchases(profile));
-        //}
-
         [HttpPut]
         [Route("{userId}")]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
@@ -134,7 +136,7 @@ namespace Bakalauras.Controllers
 
             await _ProfileRepository.UpdateAsync(profile);
 
-            return Ok(new ProfileDto(user.Id, user.UserName, user.Email, profile.Points));
+            return Ok(new ProfileDto(user.Id,profile.Name,profile.Surname, user.UserName, user.Email, profile.Points));
         }
 
         [HttpPut]
