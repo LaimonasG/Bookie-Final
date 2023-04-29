@@ -131,7 +131,7 @@ namespace Bakalauras.Controllers
         [HttpPut]
         [Route("{textId}/buy")]
         [Authorize(Roles = $"{BookieRoles.BookieReader},{BookieRoles.Admin}")]
-        public async Task<ActionResult<ProfileDto>> PurchaseText(int textId)
+        public async Task<ActionResult> PurchaseText(int textId)
         {
             var text = await _Textrepostory.GetAsync(textId);
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
@@ -154,15 +154,6 @@ namespace Bakalauras.Controllers
             {
                 profile.Points -= text.Price;
                 authorProfile.Points += text.Price;
-                //
-                // ar reikia saugot tas datas visgi?>?
-                //
-              //  Tuple<int, DateTime> newDate = new Tuple<int, DateTime>(textId, DateTime.Now);
-              //  StringBuilder temp = new StringBuilder();
-              //  temp.Append(profile.TextPurchaseDates);
-              //  temp.Append(_ProfileRepository.ConvertToStringTextDate(newDate));
-              //  temp.Append(';');
-              //  profile.TextPurchaseDates = temp.ToString();
             }
             prte.BoughtDate = DateTime.Now;
 
@@ -170,9 +161,7 @@ namespace Bakalauras.Controllers
             await _ProfileRepository.UpdateAsync(authorProfile);
             await _Textrepostory.CreateProfileTextAsync(prte);
 
-            List<Text> texts = await _Textrepostory.GetUserBoughtTextsAsync(user.Id);
-
-            return Ok(new ProfileTextsDto(user.Id, user.UserName, texts));
+            return Ok();
         }
     }
 }

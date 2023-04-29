@@ -104,18 +104,18 @@ namespace Bakalauras.Controllers
             return Ok(offersList);
         }
 
-        [HttpGet]
-        [Route("payForPoints")]
-        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<ProfilePurchacesDto>> GetPointsPaymentOffers()
-        {
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            var profile = await _ProfileRepository.GetAsync(user.Id);
+        //[HttpGet]
+        //[Route("payForPoints")]
+        //[Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        //public async Task<ActionResult<ProfilePurchacesDto>> GetPointsPaymentOffers()
+        //{
+        //    var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+        //    var profile = await _ProfileRepository.GetAsync(user.Id);
 
-            if (profile == null) return NotFound();
+        //    if (profile == null) return NotFound();
 
-            return Ok(_ProfileRepository.GetProfilePurchases(profile));
-        }
+        //    return Ok(_ProfileRepository.GetProfilePurchases(profile));
+        //}
 
         [HttpPut]
         [Route("{userId}")]
@@ -160,39 +160,39 @@ namespace Bakalauras.Controllers
             return Ok(new PersonalInfoDto(user.UserName, user.Email,dto.Name,dto.Surname));
         }
 
-        [HttpPut]
-        [Route("{userId}/picture")]
-        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<ProfileDto>> UploadProfilePicture(IFormFile file)
-        {
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            var profile = await _ProfileRepository.GetAsync(user.Id);
-            if (profile == null) return NotFound();
+        //[HttpPut]
+        //[Route("{userId}/picture")]
+        //[Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        //public async Task<ActionResult<ProfileDto>> UploadProfilePicture(IFormFile file)
+        //{
+        //    var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+        //    var profile = await _ProfileRepository.GetAsync(user.Id);
+        //    if (profile == null) return NotFound();
 
-            if (file.ContentType != "image/jpeg" && file.ContentType != "image/png")
-            {
-                return BadRequest("Leistini tik PNG ir JPG formato paveikslėliai.");
-            }
+        //    if (file.ContentType != "image/jpeg" && file.ContentType != "image/png")
+        //    {
+        //        return BadRequest("Leistini tik PNG ir JPG formato paveikslėliai.");
+        //    }
 
-            byte[] fileBytes;
-            using (var memoryStream = new MemoryStream())
-            {
-                await file.CopyToAsync(memoryStream);
-                fileBytes = memoryStream.ToArray();
-            }
+        //    byte[] fileBytes;
+        //    using (var memoryStream = new MemoryStream())
+        //    {
+        //        await file.CopyToAsync(memoryStream);
+        //        fileBytes = memoryStream.ToArray();
+        //    }
 
-            // Update the profile object with the uploaded file data
-            profile.ProfilePicture = fileBytes;
+        //    Update the profile object with the uploaded file data
+        //    profile.ProfilePicture = fileBytes;
 
-            await _ProfileRepository.UpdateAsync(profile);
+        //    await _ProfileRepository.UpdateAsync(profile);
 
-            return Ok();
-        }
-   
+        //    return Ok();
+        //}
+
         [HttpPut]
         [Route("{userId}/pay")]
         [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<ProfileBookPaymentDto>> PayForSubscribtion(ProfilePayDto dto)
+        public async Task<ActionResult<PaymentDto>> PayForSubscribtion(ProfilePayDto dto)
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var authorProfile = await _ProfileRepository.GetAsync((
@@ -229,13 +229,32 @@ namespace Bakalauras.Controllers
             await _ProfileRepository.UpdateAsync(profile);
             await _ProfileRepository.UpdateAsync(authorProfile);
 
-            return Ok(new ProfileBookPaymentDto(dto.bookId,bookPeriodPoints));
+            return Ok(new PaymentCreateDto(dto.bookId,bookPeriodPoints));
+        }
+
+        [HttpPut]
+        [Route("{userId}/pay")]
+        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<PaymentDto>> ChargeUsersForChapter(ProfilePayDto dto)
+        {
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            var profile = await _ProfileRepository.GetAsync(user.Id);
+            if (profile == null) return NotFound();
+
+            bool paymentSuccessful = await ChargeSubscribersAndUpdateAuthor(dto.bookId);
+
+            if (!paymentSuccessful)
+            {
+                return BadRequest("Nepakanka taškų atlikti šį veiksmą.");
+            }
+
+            return Ok(new PaymentCreateDto(dto.bookId, bookPeriodPoints));
         }
 
         [HttpPut]
         [Route("payForPoints/{PaymentId}")]
         [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<ProfilePurchacesDto>> PayForPoints(int PaymentId)
+        public async Task<ActionResult> PayForPoints(int PaymentId)
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
@@ -253,6 +272,26 @@ namespace Bakalauras.Controllers
             }
 
             return BadRequest("Įvyko banko klaida, bandykite iš naujo.");
+        }
+
+        [HttpGet]
+        [Route("payForPoints")]
+        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<PaymentDto>> GetAvailablePayments()
+        {
+            var rez=await _ProfileRepository.GetAvailablePayments();
+            if(rez== null) { return NotFound(); }
+            return Ok(rez);
+        }
+
+        [HttpPost]
+        [Route("payForPoints")]
+        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<PaymentDto>> CreateAvailablePayment(PaymentCreateDto dto)
+        {
+            var rez = await _ProfileRepository.CreateAvailablePayment(dto);
+            if (rez == null) { return NotFound(); }
+            return Ok(rez);
         }
 
     }

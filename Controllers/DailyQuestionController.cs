@@ -43,7 +43,7 @@ namespace Bakalauras.Controllers
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var result = await _DailyQuestionRepository.WhenWasQuestionAnswered(user.Id);
             if (result.Item1){
-                return Ok(result);
+                return Ok(result.Item2);
             }
             return Ok(new DateTime());
         }

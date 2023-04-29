@@ -41,18 +41,16 @@ namespace Bakalauras.Controllers
         [Route("finished")]
         public async Task<IEnumerable<BookDtoToBuy>> GetManyFinished(string GenreName)
         {
-            var books = await _BookRepository.GetManyAsync();
-            return books.Select(x => new BookDtoToBuy(x.Id, x.Name, x.GenreName, x.Description, x.ChapterPrice, DateTime.Now,
-                x.UserId,x.Author,x.CoverImagePath, x.IsFinished)).Where(y => y.GenreName == GenreName && y.IsFinished == 1);
+            var books = await _BookRepository.GetManyAsync(GenreName,1);
+            return books;
         }
 
         [HttpGet]
         [Route("unfinished")]
         public async Task<IEnumerable<BookDtoToBuy>> GetManyUnFinished(string GenreName)
         {
-            var books = await _BookRepository.GetManyAsync();
-            return books.Select(x => new BookDtoToBuy(x.Id, x.Name, x.GenreName, x.Description, x.ChapterPrice, DateTime.Now,
-                x.UserId, x.Author, x.CoverImagePath,x.IsFinished)).Where(y => y.GenreName == GenreName && y.IsFinished==0);
+            var books = await _BookRepository.GetManyAsync(GenreName,0);
+            return books;
         }
 
         [HttpGet]
@@ -62,8 +60,10 @@ namespace Bakalauras.Controllers
         {
             var book = await _BookRepository.GetAsync(bookId);
             if (book == null) return NotFound();
-            return new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.ChapterPrice, book.Created,
-                book.UserId,book.Author,book.CoverImagePath,book.IsFinished);
+            var chapters = await _ChaptersRepository.GetManyAsync(book.Id);
+            return new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.BookPrice, book.ChapterPrice,
+                chapters.Count, book.Created, book.UserId, await _BookRepository.GetAuthorInfo(book.Id), book.CoverImagePath,
+                book.IsFinished);
         }
 
         [HttpPost]
@@ -99,9 +99,10 @@ namespace Bakalauras.Controllers
             }
 
             await _BookRepository.CreateAsync(book, GenreName);
-
-            return Created("201", new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.ChapterPrice,
-                book.Created, book.UserId, book.Author, book.CoverImagePath,book.IsFinished));
+            var chapters = await _ChaptersRepository.GetManyAsync(book.Id);
+            return Created("201", new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.BookPrice, book.ChapterPrice,
+                chapters.Count, book.Created, book.UserId, await _BookRepository.GetAuthorInfo(book.Id), book.CoverImagePath,
+                book.IsFinished));
         }
 
         [HttpPut]
@@ -123,22 +124,11 @@ namespace Bakalauras.Controllers
             book.Created = updateBookDto.Created;
 
             await _BookRepository.UpdateAsync(book);
-
-            return Ok(new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.ChapterPrice, book.Created,
-                book.UserId, await _BookRepository.GetAuthorInfo(book.Id), book.CoverImagePath,book.IsFinished));
+            var chapters = await _ChaptersRepository.GetManyAsync(book.Id);
+            return Ok(new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.BookPrice,book.ChapterPrice,
+                chapters.Count, book.Created,book.UserId, await _BookRepository.GetAuthorInfo(book.Id), book.CoverImagePath,
+                book.IsFinished));
         }
-
-        //[HttpDelete]
-        //[Route("{bookId}")]
-        //public async Task<ActionResult> Remove(int bookId)
-        //{
-        //    var book = await _BookRepository.GetAsync(bookId);
-        //    if (book == null) return NotFound();
-        //    await _BookRepository.DeleteAsync(book);
-
-        //    //204
-        //    return NoContent();
-        //}
 
         [HttpPut]
         [Route("{bookId}/subscribe")]
@@ -156,9 +146,9 @@ namespace Bakalauras.Controllers
 
             //  if (profile.ProfileBooks == null) { profile.ProfileBooks = new List<ProfileBook>(); }
 
-            if (_ProfileRepository.WasBookSubscribed(prbo, profile))
+            if (_ProfileRepository.WasBookSubscribed(prbo))
             {
-                return BadRequest("Book was already subscribed!");
+                return BadRequest("Knyga jau prenumeruojama.");
             }
 
             ////add chapters to book and check for an old subscription
@@ -246,6 +236,10 @@ namespace Bakalauras.Controllers
             if (!_ProfileRepository.HasEnoughPoints(profile.Points, book.BookPrice))
             {
                 return BadRequest("Pirkiniui nepakanka taškų.");
+            }
+            else if (await _BookRepository.WasBookBought(book))
+            {
+                return BadRequest("Naudotojas jau nusipirkęs šią knygą.");
             }
 
             ProfileBook pb = new ProfileBook { BookId = bookId, ProfileId = profile.Id };

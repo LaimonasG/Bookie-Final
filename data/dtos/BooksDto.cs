@@ -2,8 +2,8 @@
 
 namespace Bakalauras.data.dtos
 {
-    public record BookDtoToBuy(int Id,string Name, string GenreName, string Description, double Price,
-        DateTime Created,string UserId,string Author,string CoverImageUrl,int IsFinished);
+    public record BookDtoToBuy(int Id,string Name, string GenreName, string Description,double BookPrice,
+        double ChapterPrice,int chapterCount,DateTime Created,string UserId,string Author,string CoverImageUrl,int IsFinished);
     public record BookDtoBought(int Id, string Name, ICollection<Chapter>? Chapters, string GenreName, string Description,
         double Price, DateTime Created, string UserId,string Author, string CoverImageUrl, int IsFinished);
     public record CreateBookDto(string Name, string Description, string ChapterPrice,string BookPrice,IFormFile CoverImage);

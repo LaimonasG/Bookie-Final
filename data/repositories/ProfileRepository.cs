@@ -24,15 +24,15 @@ namespace Bakalauras.data.repositories
         Task<IReadOnlyList<Profile>> GetManyAsync();
         Task UpdateAsync(Profile profile);
         Task<string> UpdatePersonalInfoAsync(PersonalInfoDto dto, BookieUser user,Profile profile);
-        Task<List<ProfileBookOffersDto>> CalculateBookOffers(Profile profile);
-        ProfileBookOffersDto CalculateBookOffer(ProfileBook pb);
+      //  Task<List<ProfileBookOffersDto>> CalculateBookOffers(Profile profile);
+     //   ProfileBookOffersDto CalculateBookOffer(ProfileBook pb);
         ProfileBookOffersDto CalculateBookSubscriptionPrice(ProfileBook pb,Book book);
-        ProfilePurchacesDto GetProfilePurchases(Profile profile);
+        //ProfilePurchacesDto GetProfilePurchases(Profile profile);
 
         List<Tuple<int, int>> ConvertToTupleList(string tupleListString);
         Task RemoveProfileBookAsync(ProfileBook prbo);
 
-        public List<ProfileBook> GetProfileBooks(Profile profile);
+        List<ProfileBook> GetProfileBooks(Profile profile);
 
         Task<ProfileBook> GetProfileBookRecordSubscribed(int bookId,int profileId);
 
@@ -48,7 +48,7 @@ namespace Bakalauras.data.repositories
 
         string ConvertToStringTextDate(Tuple<int, DateTime> tuple);
 
-        bool WasBookSubscribed(ProfileBook prbo, Profile profile);
+        bool WasBookSubscribed(ProfileBook prbo);
 
         bool HasEnoughPoints(double userPoints,double costpoints);
 
@@ -59,6 +59,11 @@ namespace Bakalauras.data.repositories
         Task<Payment> GetPayment(int paymentId);
 
         Task<List<BookDtoBought>> GetBookList(List<ProfileBook> prbo);
+
+        Task<List<PaymentDto>> GetAvailablePayments();
+
+        Task<PaymentDto> CreateAvailablePayment(PaymentCreateDto dto);
+
     }
     public class ProfileRepository : IProfileRepository
     {
@@ -164,56 +169,56 @@ namespace Bakalauras.data.repositories
             return null;
         }
 
-        public async Task<List<ProfileBookOffersDto>> CalculateBookOffers(Profile profile)
-        {
-            List<ProfileBookOffersDto> offersList = new List<ProfileBookOffersDto>();
-            List<ProfileBook> pb = GetProfileBooks(profile);
+        //public async Task<List<ProfileBookOffersDto>> CalculateBookOffers(Profile profile)
+        //{
+        //    List<ProfileBookOffersDto> offersList = new List<ProfileBookOffersDto>();
+        //    List<ProfileBook> pb = GetProfileBooks(profile);
 
-            if (pb != null)
-            {
-                for (int i = 0; i < pb.Count; i++)
-                {
-                    var offer=CalculateBookOffer(pb.ElementAt(i));
-                    offersList.Add(offer);
-                }
-            }
+        //    if (pb != null)
+        //    {
+        //        for (int i = 0; i < pb.Count; i++)
+        //        {
+        //            var offer=CalculateBookOffer(pb.ElementAt(i));
+        //            offersList.Add(offer);
+        //        }
+        //    }
 
-            await UpdateAsync(profile);
+        //    await UpdateAsync(profile);
 
-            return offersList;
-        }
+        //    return offersList;
+        //}
 
         public List<ProfileBook> GetProfileBooks(Profile profile)
         {
             return _BookieDBContext.ProfileBooks.Where(x=>x.ProfileId==profile.Id).ToList();
         }
 
-        public ProfileBookOffersDto CalculateBookOffer(ProfileBook pb)
-        {
-            var BoughtChapterList = ConvertStringToIds(pb.BoughtChapterList);
-            if (BoughtChapterList == null) { BoughtChapterList = new List<int>(); }
+        //public ProfileBookOffersDto CalculateBookOffer(ProfileBook pb)
+        //{
+        //    var BoughtChapterList = ConvertStringToIds(pb.BoughtChapterList);
+        //    if (BoughtChapterList == null) { BoughtChapterList = new List<int>(); }
 
-            var releasedChapters = _BookieDBContext.Chapters
-                                        .Where(x => x.BookId == pb.BookId)
-                                        .Select(t => t.Id)
-                                        .ToList();
+        //    var releasedChapters = _BookieDBContext.Chapters
+        //                                .Where(x => x.BookId == pb.BookId)
+        //                                .Select(t => t.Id)
+        //                                .ToList();
 
-            var missingChapters=releasedChapters.Except(BoughtChapterList).ToList();
+        //    var missingChapters=releasedChapters.Except(BoughtChapterList).ToList();
 
-            if (missingChapters!=null)
-            {
-                if (missingChapters.Count > 0)
-                {
-                    ProfileBookOffersDto offer = new ProfileBookOffersDto
-                    (pb.BookId, missingChapters);
-                    return offer;
-                }   
-            }
+        //    if (missingChapters!=null)
+        //    {
+        //        if (missingChapters.Count > 0)
+        //        {
+        //            ProfileBookOffersDto offer = new ProfileBookOffersDto
+        //            (pb.BookId, missingChapters);
+        //            return offer;
+        //        }   
+        //    }
 
-            ProfileBookOffersDto rez = new ProfileBookOffersDto
-                    (pb.BookId, new List<int>());
-            return rez;
-        }
+        //    ProfileBookOffersDto rez = new ProfileBookOffersDto
+        //            (pb.BookId, new List<int>());
+        //    return rez;
+        //}
 
         public ProfileBookOffersDto CalculateBookSubscriptionPrice(ProfileBook pb,Book book)
         {
@@ -241,20 +246,20 @@ namespace Bakalauras.data.repositories
             }              
         }
 
-        public ProfilePurchacesDto GetProfilePurchases(Profile profile)
-        {
-            List<ProfileBook> pbs = GetProfileBooks(profile);
+        //public ProfilePurchacesDto GetProfilePurchases(Profile profile)
+        //{
+        //    List<ProfileBook> pbs = GetProfileBooks(profile);
 
-            List<Tuple<int, int>> bookChapterPairs = pbs
-                    .SelectMany(pb => ConvertStringToIds(pb.BoughtChapterList).Select(chapterId => Tuple.Create(pb.BookId, chapterId)))
-                    .ToList();
+        //    List<Tuple<int, int>> bookChapterPairs = pbs
+        //            .SelectMany(pb => ConvertStringToIds(pb.BoughtChapterList).Select(chapterId => Tuple.Create(pb.BookId, chapterId)))
+        //            .ToList();
 
-            List<Tuple<int, int>> TextPurchases = ConvertToTupleList(profile.TextPurchaseDates);
+        //    List<Tuple<int, int>> TextPurchases = ConvertToTupleList(profile.TextPurchaseDates);
 
-            ProfilePurchacesDto result = new ProfilePurchacesDto(bookChapterPairs, TextPurchases);
+        //    ProfilePurchacesDto result = new ProfilePurchacesDto(bookChapterPairs, TextPurchases);
 
-            return result;
-        }
+        //    return result;
+        //}
 
         public Tuple<int, int> ConvertToTuple(string tupleString)
         {
@@ -353,9 +358,9 @@ namespace Bakalauras.data.repositories
             return data.Split(',').Select(int.Parse).ToList();
         }
 
-        public bool WasBookSubscribed(ProfileBook prbo, Profile profile)
-        {
-            return profile.ProfileBooks.Contains(prbo);
+        public bool WasBookSubscribed(ProfileBook prbo)
+        {        
+            return  _BookieDBContext.ProfileBooks.Contains(prbo);
         }
 
         public bool HasEnoughPoints(double userPoints, double costpoints)
@@ -416,6 +421,23 @@ namespace Bakalauras.data.repositories
 
             return result;
            
+        }
+
+        public async Task<List<PaymentDto>> GetAvailablePayments()
+        {
+            var payments = await _BookieDBContext.Payments
+               .Select(p => new PaymentDto(p.Id, p.Points, p.Price))
+               .ToListAsync();
+            return payments;
+        }
+
+        public async Task<PaymentDto> CreateAvailablePayment(PaymentCreateDto dto)
+        {
+            Payment temp = new Payment { Price = dto.Price, Points = dto.Points };
+            _BookieDBContext.Payments.Add(temp);
+            await _BookieDBContext.SaveChangesAsync();
+            PaymentDto pay = new PaymentDto(temp.Id, temp.Points, temp.Price);
+            return pay;
         }
     }
 }

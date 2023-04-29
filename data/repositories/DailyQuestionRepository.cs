@@ -20,7 +20,7 @@ namespace Bakalauras.data.repositories
         Task<(bool, object)> AnswerQuestion(int questionId, int answerId, string userId);
         Task<Answer> GetCorrectAsnwer(DailyQuestion question);
         List<Answer> UpdateAnswers(List<Answer> answers, int questionId);
-        Task<(bool, object)> WhenWasQuestionAnswered(string userId);
+        Task<(bool, DateTime)> WhenWasQuestionAnswered(string userId);
     }
     public class DailyQuestionRepository : IDailyQuestionRepository
     {
@@ -102,21 +102,36 @@ namespace Bakalauras.data.repositories
             DailyQuestionProfile dqp = new DailyQuestionProfile { DailyQuestionId = question.Id, ProfileId = userProfile.Id };
 
             var existingDqp = await _BookieDBContext.DailyQuestionProfiles.FirstOrDefaultAsync(x => x.DailyQuestionId == dqp.DailyQuestionId && x.ProfileId == dqp.ProfileId);
-            if (existingDqp != null) { return (false, "Question already answered"); }
-
-            if (answer == trueAnswer)
+            AnswerDto result;
+            if (existingDqp != null)
             {
-                userProfile.Points += question.Points;
-                dqp.IsCorrect = true;
+                if (answer == trueAnswer)
+                {
+                    userProfile.Points += question.Points;
+                    existingDqp.IsCorrect = true;
+                }
+                else { existingDqp.IsCorrect = false; }
+                existingDqp.DateAnswered = DateTime.Now;
+                _BookieDBContext.DailyQuestionProfiles.Update(existingDqp);
+                result = new AnswerDto(trueAnswer.Content, existingDqp.IsCorrect ? 1 : 0);
             }
-            else { dqp.IsCorrect = false; }
+            else
+            {
+                if (answer == trueAnswer)
+                {
+                    userProfile.Points += question.Points;
+                    dqp.IsCorrect = true;
+                }
+                else { dqp.IsCorrect = false; }
+                dqp.DateAnswered = DateTime.Now;
+                _BookieDBContext.DailyQuestionProfiles.Add(dqp);
+                result = new AnswerDto(trueAnswer.Content, dqp.IsCorrect ? 1 : 0);
+            }
 
-            dqp.DateAnswered = DateTime.Now;
-            _BookieDBContext.DailyQuestionProfiles.Add(dqp);
             _BookieDBContext.Profiles.Update(userProfile);
 
             await _BookieDBContext.SaveChangesAsync();
-            AnswerDto result = new AnswerDto(trueAnswer.Content, dqp.IsCorrect ? 1 : 0);
+            
             return (true, result);
         }
 
@@ -140,7 +155,7 @@ namespace Bakalauras.data.repositories
             return rez;
         }
 
-        public async Task<(bool, object)> WhenWasQuestionAnswered(string userId)
+        public async Task<(bool, DateTime)> WhenWasQuestionAnswered(string userId)
         {
             Profile profile=await _ProfileRepository.GetAsync(userId);
             var dqp = await _BookieDBContext.DailyQuestionProfiles
@@ -148,7 +163,7 @@ namespace Bakalauras.data.repositories
                       .FirstOrDefaultAsync(x => x.ProfileId == profile.Id);
 
             if (dqp != null) { return (true, dqp.DateAnswered); }
-            return (false, "Question wasn't answered yet");
+            return (false, new DateTime());
         }
     }
 }
