@@ -90,19 +90,19 @@ namespace Bakalauras.Controllers
         //    return Ok(File(profile.ProfilePicture, "image/png"));
         //}
 
-        [HttpGet]
-        [Route("paymentOffers")]
-        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<List<ProfileBookOffersDto>>> GetReaderPaymentOffers()
-        {
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            var profile = await _ProfileRepository.GetAsync(user.Id);
-            if (profile == null) return NotFound();
+        //[HttpGet]
+        //[Route("paymentOffers")]
+        //[Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        //public async Task<ActionResult<List<ProfileBookOffersDto>>> GetReaderPaymentOffers()
+        //{
+        //    var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+        //    var profile = await _ProfileRepository.GetAsync(user.Id);
+        //    if (profile == null) return NotFound();
 
-            List<ProfileBookOffersDto> offersList = await _ProfileRepository.CalculateBookOffers(profile);
+        //    List<ProfileBookOffersDto> offersList = await _ProfileRepository.CalculateBookOffers(profile);
 
-            return Ok(offersList);
-        }
+        //    return Ok(offersList);
+        //}
 
         //[HttpGet]
         //[Route("payForPoints")]
@@ -142,7 +142,7 @@ namespace Bakalauras.Controllers
         [HttpPut]
         [Route("info")]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<PersonalInfoDto>> UpdatePersonalInfo(PersonalInfoDto dto)
+        public async Task<ActionResult> UpdatePersonalInfo(PersonalInfoDto dto)
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
@@ -157,7 +157,7 @@ namespace Bakalauras.Controllers
             string error= await _ProfileRepository.UpdatePersonalInfoAsync(dto, user,profile);
             if(error!=null) { return BadRequest(error); }
 
-            return Ok(new PersonalInfoDto(user.UserName, user.Email,dto.Name,dto.Surname));
+            return Ok();
         }
 
         //[HttpPut]
@@ -189,66 +189,61 @@ namespace Bakalauras.Controllers
         //    return Ok();
         //}
 
-        [HttpPut]
-        [Route("{userId}/pay")]
-        [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<PaymentDto>> PayForSubscribtion(ProfilePayDto dto)
-        {
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            var authorProfile = await _ProfileRepository.GetAsync((
-                                await _UserManager.FindByIdAsync((
-                                await _BookRepository.GetAsync(dto.bookId)).UserId)).Id);
+        //[HttpPut]
+        //[Route("{userId}/pay")]
+        //[Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
+        //public async Task<ActionResult<PaymentDto>> PayForSubscribtion(ProfilePayDto dto)
+        //{
+        //    var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+        //    var authorProfile = await _ProfileRepository.GetAsync((
+        //                        await _UserManager.FindByIdAsync((
+        //                        await _BookRepository.GetAsync(dto.bookId)).UserId)).Id);
 
-            var profile = await _ProfileRepository.GetAsync(user.Id);
-            if (profile == null) return NotFound();
+        //    var profile = await _ProfileRepository.GetAsync(user.Id);
+        //    if (profile == null) return NotFound();
 
-            var profileBook = await _ProfileRepository.GetProfileBookRecordSubscribed(dto.bookId, profile.Id);
-            var book = await _BookRepository.GetAsync(dto.bookId);
-            var profileOffer = _ProfileRepository.CalculateBookOffer(profileBook);
-            var bookPeriodPoints = book.ChapterPrice * profileOffer.MissingChapters.Count;
-            if (profile.Points < bookPeriodPoints)
-            {
-                return BadRequest("Nepakanka taškų atlikti šį veiksmą.");
-            }
+        //    var profileBook = await _ProfileRepository.GetProfileBookRecordSubscribed(dto.bookId, profile.Id);
+        //    var book = await _BookRepository.GetAsync(dto.bookId);
+        //    var profileOffer = _ProfileRepository.CalculateBookOffer(profileBook);
+        //    var bookPeriodPoints = book.ChapterPrice * profileOffer.MissingChapters.Count;
+        //    if (profile.Points < bookPeriodPoints)
+        //    {
+        //        return BadRequest("Nepakanka taškų atlikti šį veiksmą.");
+        //    }
      
-                profile.Points -= bookPeriodPoints;
+        //        profile.Points -= bookPeriodPoints;
                 
 
-                var oldPB = await _ProfileRepository.GetProfileBookRecordSubscribed(book.Id, profile.Id);
-                var BoughtChapterList = _ProfileRepository.ConvertStringToIds(oldPB.BoughtChapterList);
-                if (BoughtChapterList == null) { BoughtChapterList = new List<int>(); }
+        //        var oldPB = await _ProfileRepository.GetProfileBookRecordSubscribed(book.Id, profile.Id);
+        //        var BoughtChapterList = _ProfileRepository.ConvertStringToIds(oldPB.BoughtChapterList);
+        //        if (BoughtChapterList == null) { BoughtChapterList = new List<int>(); }
 
-                BoughtChapterList.AddRange(profileOffer.MissingChapters);
-                oldPB.BoughtChapterList = _ProfileRepository.ConvertIdsToString(BoughtChapterList);
+        //        BoughtChapterList.AddRange(profileOffer.MissingChapters);
+        //        oldPB.BoughtChapterList = _ProfileRepository.ConvertIdsToString(BoughtChapterList);
 
-                await _ProfileRepository.UpdateProfileBookRecord(oldPB);
+        //        await _ProfileRepository.UpdateProfileBookRecord(oldPB);
 
-                authorProfile.Points += bookPeriodPoints;
+        //        authorProfile.Points += bookPeriodPoints;
             
 
-            await _ProfileRepository.UpdateAsync(profile);
-            await _ProfileRepository.UpdateAsync(authorProfile);
+        //    await _ProfileRepository.UpdateAsync(profile);
+        //    await _ProfileRepository.UpdateAsync(authorProfile);
 
-            return Ok(new PaymentCreateDto(dto.bookId,bookPeriodPoints));
-        }
+        //    return Ok(new PaymentCreateDto(dto.bookId,bookPeriodPoints));
+        //}
 
         [HttpPut]
-        [Route("{userId}/pay")]
+        [Route("pay")]
         [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<PaymentDto>> ChargeUsersForChapter(ProfilePayDto dto)
+        public async Task<ActionResult<int>> ChargeUsersForChapter(ProfilePayDto dto)
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
             if (profile == null) return NotFound();
 
-            bool paymentSuccessful = await ChargeSubscribersAndUpdateAuthor(dto.bookId);
+            int chargedUserCount=await _BookRepository.ChargeSubscribersAndUpdateAuthor(dto.bookId,dto.chapterId);
 
-            if (!paymentSuccessful)
-            {
-                return BadRequest("Nepakanka taškų atlikti šį veiksmą.");
-            }
-
-            return Ok(new PaymentCreateDto(dto.bookId, bookPeriodPoints));
+            return Ok(chargedUserCount);
         }
 
         [HttpPut]

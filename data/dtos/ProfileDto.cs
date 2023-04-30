@@ -14,6 +14,6 @@ namespace Bakalauras.data.dtos
 
     public record ProfileBookOffersDto(int bookId,List<int> MissingChapters);
 
-    public record ProfilePayDto(int bookId);
+    public record ProfilePayDto(int bookId,int chapterId);
    // public record ProfilePurchacesDto(List<Tuple<int, int>> BookPayments, List<Tuple<int, int>> TextPayments);
 }

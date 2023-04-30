@@ -1,4 +1,4 @@
-using Bakalauras.data;
+﻿using Bakalauras.data;
 using Microsoft.AspNetCore.Identity;
 using Bakalauras.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -27,7 +27,10 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
-builder.Services.AddIdentity<BookieUser, IdentityRole>().AddEntityFrameworkStores<BookieDBContext>().AddDefaultTokenProviders();
+builder.Services.AddIdentity<BookieUser, IdentityRole>(options =>
+{
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ĄąČčĘęĖėĮįŠšŲųŪūŽž";
+}).AddEntityFrameworkStores<BookieDBContext>().AddDefaultTokenProviders();
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

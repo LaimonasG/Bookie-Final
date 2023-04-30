@@ -580,3 +580,7 @@ D:\laimi\Bakalauras\BookieAPI\obj\Debug\net6.0\Bakalauras.genruntimeconfig.cache
 D:\laimi\Bakalauras\BookieAPI\obj\Debug\net6.0\ref\Bakalauras.dll
 D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\AWSSDK.Core.dll
 D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\AWSSDK.S3.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\AngleSharp.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\AngleSharp.Css.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\HtmlSanitizer.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\System.Collections.Immutable.dll

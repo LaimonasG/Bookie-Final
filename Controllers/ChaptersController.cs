@@ -42,7 +42,7 @@ namespace Bakalauras.Controllers
 
         [HttpPost]
         [Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<GetChapterDto>> Create([FromForm] CreateChapterDto dto, int bookId)
+        public async Task<ActionResult<CreatedChapterDto>> Create([FromForm] CreateChapterDto dto, int bookId)
         {
             string content = _ChapterRepository.ExtractTextFromPDf(dto.File);
             var book = await _BookRepository.GetAsync(bookId);
@@ -60,9 +60,12 @@ namespace Bakalauras.Controllers
             }
 
             Chapter chapter = new Chapter { Name = dto.Name, BookId = bookId, Content = content, UserId=UserId };
-            await _ChapterRepository.CreateAsync(chapter, int.Parse(dto.IsFinished));
+            int chapterId=await _ChapterRepository.CreateAsync(chapter, int.Parse(dto.IsFinished));
 
-            return new GetChapterDto(chapter.Name,chapter.Content,chapter.BookId);
+            //charge subscribed users
+            int chargedUserCount=await _BookRepository.ChargeSubscribersAndUpdateAuthor(bookId, chapterId);
+
+            return new CreatedChapterDto(chapter.Name,chapter.Content,chapter.BookId,chargedUserCount);
         }
 
         [HttpGet]

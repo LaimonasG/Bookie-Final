@@ -142,19 +142,23 @@ namespace Bakalauras.Controllers
 
             ProfileText prte = new ProfileText { TextId = textId, ProfileId = profile.Id };
 
-            if (profile.Points < text.Price)
+            if (text.UserId == profile.UserId)
             {
-                return BadRequest("Pirkiniui nepakanka taškų.");
+                return BadRequest("Jūs esate teksto autorius.");
             }
-            else if(await _Textrepostory.WasTextBought(text))
+            else
+            if (await _Textrepostory.WasTextBought(text))
             {
                 return BadRequest("Naudotojas jau nusipirkęs šį tekstą.");
             }
             else
+            if (profile.Points < text.Price)
             {
+                return BadRequest("Pirkiniui nepakanka taškų.");
+            }
                 profile.Points -= text.Price;
                 authorProfile.Points += text.Price;
-            }
+            
             prte.BoughtDate = DateTime.Now;
 
             await _ProfileRepository.UpdateAsync(profile);

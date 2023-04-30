@@ -26,10 +26,10 @@ namespace Bakalauras.data.repositories
         Task<string> UpdatePersonalInfoAsync(PersonalInfoDto dto, BookieUser user,Profile profile);
       //  Task<List<ProfileBookOffersDto>> CalculateBookOffers(Profile profile);
      //   ProfileBookOffersDto CalculateBookOffer(ProfileBook pb);
-        ProfileBookOffersDto CalculateBookSubscriptionPrice(ProfileBook pb,Book book);
+        //ProfileBookOffersDto CalculateBookSubscriptionPrice(ProfileBook pb,Book book);
         //ProfilePurchacesDto GetProfilePurchases(Profile profile);
 
-        List<Tuple<int, int>> ConvertToTupleList(string tupleListString);
+        //List<Tuple<int, int>> ConvertToTupleList(string tupleListString);
         Task RemoveProfileBookAsync(ProfileBook prbo);
 
         List<ProfileBook> GetProfileBooks(Profile profile);
@@ -46,13 +46,13 @@ namespace Bakalauras.data.repositories
 
         List<int> ConvertStringToIds(string data);
 
-        string ConvertToStringTextDate(Tuple<int, DateTime> tuple);
+        //string ConvertToStringTextDate(Tuple<int, DateTime> tuple);
 
         bool WasBookSubscribed(ProfileBook prbo);
 
         bool HasEnoughPoints(double userPoints,double costpoints);
 
-        Task<List<Payment>> GetPaymentList();
+        //Task<List<Payment>> GetPaymentList();
 
         Task PayForPoints(Profile userWallet, Payment payment);
 
@@ -63,6 +63,8 @@ namespace Bakalauras.data.repositories
         Task<List<PaymentDto>> GetAvailablePayments();
 
         Task<PaymentDto> CreateAvailablePayment(PaymentCreateDto dto);
+
+        Task<List<Profile>> GetBookSubscribers(int bookId);
 
     }
     public class ProfileRepository : IProfileRepository
@@ -124,7 +126,7 @@ namespace Bakalauras.data.repositories
 
             if (dto.Username != null)
             {
-                if (dto.Username.Length > 25 || Regex.IsMatch(dto.Username, @"[^a-zA-Z0-9]"))
+                if (dto.Username.Length > 25 || Regex.IsMatch(dto.Username, @"[^a-zA-Z0-9ąčęėįšųūžĄČĘĖĮŠŲŪŽ]"))
                 {
                     badUsername = true;
                 }
@@ -220,31 +222,31 @@ namespace Bakalauras.data.repositories
         //    return rez;
         //}
 
-        public ProfileBookOffersDto CalculateBookSubscriptionPrice(ProfileBook pb,Book book)
-        {
-            List<Chapter> chapters = book.Chapters != null ? book.Chapters.ToList() : new List<Chapter>();
-            if (pb.BoughtChapterList.Count()==0)
-            {
-                if (chapters.Count != null)
-                {
-                    List<int> ids=chapters.Select(x=>x.Id).ToList();
-                    ProfileBookOffersDto offer = new ProfileBookOffersDto
-                    (book.Id, ids);
-                    return offer;
-                }
-                else
-                {
-                    ProfileBookOffersDto offer = new ProfileBookOffersDto
-                    (book.Id, new List<int>());
-                    return offer;
-                }  
-            }
-            else
-            {
-                var probo = CalculateBookOffer(pb);
-                return probo;
-            }              
-        }
+        //public ProfileBookOffersDto CalculateBookSubscriptionPrice(ProfileBook pb,Book book)
+        //{
+        //    List<Chapter> chapters = book.Chapters != null ? book.Chapters.ToList() : new List<Chapter>();
+        //    if (pb.BoughtChapterList.Count()==0)
+        //    {
+        //        if (chapters.Count != null)
+        //        {
+        //            List<int> ids=chapters.Select(x=>x.Id).ToList();
+        //            ProfileBookOffersDto offer = new ProfileBookOffersDto
+        //            (book.Id, ids);
+        //            return offer;
+        //        }
+        //        else
+        //        {
+        //            ProfileBookOffersDto offer = new ProfileBookOffersDto
+        //            (book.Id, new List<int>());
+        //            return offer;
+        //        }  
+        //    }
+        //    else
+        //    {
+        //        var probo = CalculateBookOffer(pb);
+        //        return probo;
+        //    }              
+        //}
 
         //public ProfilePurchacesDto GetProfilePurchases(Profile profile)
         //{
@@ -261,45 +263,45 @@ namespace Bakalauras.data.repositories
         //    return result;
         //}
 
-        public Tuple<int, int> ConvertToTuple(string tupleString)
-        {
-            int intVal1 = 0;
-            int intVal2 = 0;
+        //public Tuple<int, int> ConvertToTuple(string tupleString)
+        //{
+        //    int intVal1 = 0;
+        //    int intVal2 = 0;
 
-            // check if the input string is in the expected format "(intVal, intVal)"
-            if (tupleString.StartsWith("(") && tupleString.EndsWith(")"))
-            {
-                string[] values = tupleString.Substring(1, tupleString.Length - 2).Split(',');
-                if (values.Length == 2)
-                {
-                    int.TryParse(values[0], out intVal1);
-                    int.TryParse(values[1], out intVal2);
-                }
-            }
+        //    // check if the input string is in the expected format "(intVal, intVal)"
+        //    if (tupleString.StartsWith("(") && tupleString.EndsWith(")"))
+        //    {
+        //        string[] values = tupleString.Substring(1, tupleString.Length - 2).Split(',');
+        //        if (values.Length == 2)
+        //        {
+        //            int.TryParse(values[0], out intVal1);
+        //            int.TryParse(values[1], out intVal2);
+        //        }
+        //    }
 
-            return Tuple.Create(intVal1, intVal2);
-        }
+        //    return Tuple.Create(intVal1, intVal2);
+        //}
 
-        public List<Tuple<int, int>> ConvertToTupleList(string tupleListString)
-        {
-            List<Tuple<int, int>> tupleList = new List<Tuple<int, int>>();
+        //public List<Tuple<int, int>> ConvertToTupleList(string tupleListString)
+        //{
+        //    List<Tuple<int, int>> tupleList = new List<Tuple<int, int>>();
 
-            if(tupleListString!=null)
-            if (tupleListString.StartsWith("[") && tupleListString.EndsWith("]"))
-            {
-                string[] tuples = tupleListString.Substring(1, tupleListString.Length - 2).Split(';');
-                foreach (string tuple in tuples)
-                {
-                    Tuple<int, int> tupleVal = ConvertToTuple(tuple.Trim());
-                    if (tupleVal != null)
-                    {
-                        tupleList.Add(tupleVal);
-                    }
-                }
-            }
+        //    if(tupleListString!=null)
+        //    if (tupleListString.StartsWith("[") && tupleListString.EndsWith("]"))
+        //    {
+        //        string[] tuples = tupleListString.Substring(1, tupleListString.Length - 2).Split(';');
+        //        foreach (string tuple in tuples)
+        //        {
+        //            Tuple<int, int> tupleVal = ConvertToTuple(tuple.Trim());
+        //            if (tupleVal != null)
+        //            {
+        //                tupleList.Add(tupleVal);
+        //            }
+        //        }
+        //    }
 
-            return tupleList;
-        }
+        //    return tupleList;
+        //}
 
         public async Task<ProfileBook> GetProfileBookRecordSubscribed(int bookId, int profileId)
         {
@@ -325,10 +327,10 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
-        public string ConvertToStringTextDate(Tuple<int, DateTime> tuple)
-        {
-            return $"({tuple.Item1}, {tuple.Item2:o})";
-        }
+        //public string ConvertToStringTextDate(Tuple<int, DateTime> tuple)
+        //{
+        //    return $"({tuple.Item1}, {tuple.Item2:o})";
+        //}
 
         public string ConvertIdsToString(List<int> data)
         {
@@ -368,10 +370,10 @@ namespace Bakalauras.data.repositories
             return userPoints >= costpoints;
         }
 
-        public async Task<List<Payment>> GetPaymentList()
-        {
-            return await _BookieDBContext.Payments.ToListAsync();
-        }
+        //public async Task<List<Payment>> GetPaymentList()
+        //{
+        //    return await _BookieDBContext.Payments.ToListAsync();
+        //}
 
         public async Task<Payment> GetPayment(int paymentId)
         {
@@ -391,36 +393,45 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
+        //returns only the chapters that were bought previously
         public async Task<List<BookDtoBought>> GetBookList(List<ProfileBook> prbo)
         {
             var bookIds = prbo.Select(pb => pb.BookId).ToList();
+            var boughtChaptersMap = new Dictionary<int, List<int>>();
 
-            var books = _BookieDBContext.Books.Include(b => b.Chapters)
-                                      .Where(x => bookIds.Contains(x.Id))
-                                      .ToList();
-            List<BookDtoBought> result = new List<BookDtoBought>();
-            foreach (Book book in books)
+            foreach (var temp in prbo)
             {
-
-                var temp = new BookDtoBought(
-           book.Id,
-           book.Name,
-           book.Chapters,
-           book.GenreName,
-           book.Description,
-           book.BookPrice,
-           book.Created,
-           book.UserId,
-           book.Author,
-           book.CoverImagePath,
-           book.IsFinished
-              );
-                result.Add(temp);
-
+                var ids = ConvertStringToIds(temp.BoughtChapterList);
+                boughtChaptersMap[temp.BookId] = ids;
             }
 
-            return result;
-           
+            var books = _BookieDBContext.Books.Include(b => b.Chapters)
+                                  .Where(x => bookIds.Contains(x.Id))
+                                  .ToList();
+
+            var boughtBooks = new List<BookDtoBought>();
+            foreach (var book in books)
+            {
+                if (boughtChaptersMap.ContainsKey(book.Id))
+                {
+                    var boughtChapters = book.Chapters.Where(c => boughtChaptersMap[book.Id].Contains(c.Id)).ToList();
+                    var temp = new BookDtoBought(
+                    book.Id,
+                    book.Name,
+                    boughtChapters,
+                    book.GenreName,
+                    book.Description,
+                    book.BookPrice,
+                    book.Created,
+                    book.UserId,
+                    book.Author,
+                    book.CoverImagePath,
+                    book.IsFinished
+                    );
+                    boughtBooks.Add(temp);
+                }
+            }
+            return boughtBooks;        
         }
 
         public async Task<List<PaymentDto>> GetAvailablePayments()
@@ -438,6 +449,14 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
             PaymentDto pay = new PaymentDto(temp.Id, temp.Points, temp.Price);
             return pay;
+        }
+
+        public async Task<List<Profile>> GetBookSubscribers(int bookId)
+        {
+            var profileBooks = await _BookieDBContext.ProfileBooks.Where(x => x.BookId == bookId).ToListAsync();
+            var profileIds = profileBooks.Select(pb => pb.ProfileId).ToList();
+            var profiles = await _BookieDBContext.Profiles.Where(x => profileIds.Contains(x.Id)).ToListAsync();
+            return profiles;
         }
     }
 }

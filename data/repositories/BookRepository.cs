@@ -13,6 +13,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using Bakalauras.Migrations;
+using System.Text.RegularExpressions;
 
 namespace Bakalauras.data.repositories
 {
@@ -31,7 +32,11 @@ namespace Bakalauras.data.repositories
 
         Task<bool> WasBookBought(Book book);
 
-        Task<bool> ChargeSubscribersAndUpdateAuthor(int bookId);
+        Task<int> ChargeSubscribersAndUpdateAuthor(int bookId, int chapterId);
+
+        void HandleBookWasSubscribed(ref List<int> chapterIds, List<int> BoughtChapterList, List<Chapter> actualChapters);
+        (string bucketName, string objectKey) ParseS3Url(string imageUrl);
+        Task<bool> DeleteImageFromS3Async(string imageUrl, string accessKey, string secretKey);
         Task<string> UploadImageToS3Async(Stream imageStream, string bucketName, string objectKey, string accessKey, string secretKey);
     }
 
@@ -195,6 +200,52 @@ namespace Bakalauras.data.repositories
             return imageUrl;
         }
 
+
+        public async Task<bool> DeleteImageFromS3Async(string imageUrl, string accessKey, string secretKey)
+        {
+            try
+            {
+                // Parse the imageUrl to get the bucketName and objectKey
+                (string bucketName, string objectKey) = ParseS3Url(imageUrl);
+
+                // Create an Amazon S3 client using the access key and secret key
+                var s3Client = new AmazonS3Client(accessKey, secretKey, RegionEndpoint.EUNorth1);
+
+                // Create a DeleteObjectRequest with the bucket name and object key
+                var deleteRequest = new Amazon.S3.Model.DeleteObjectRequest
+                {
+                    BucketName = bucketName,
+                    Key = objectKey
+                };
+
+                // Delete the image
+                await s3Client.DeleteObjectAsync(deleteRequest);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error deleting image from S3: " + ex.Message);
+                return false;
+            }
+        }
+
+        public (string bucketName, string objectKey) ParseS3Url(string imageUrl)
+        {
+            // Remove the "https://" prefix
+            imageUrl = imageUrl.Substring(8);
+
+            // Split the URL into parts
+            string[] urlParts = imageUrl.Split('/');
+
+            // Extract the bucket name and object key
+            string bucketName = urlParts[0].Split('.')[0];
+            string objectKey = string.Join("/", urlParts, 1, urlParts.Length - 1);
+
+            return (bucketName, objectKey);
+        }
+
+
         public async Task<bool> WasBookBought(Book book)
         {
             var found = await _BookieDBContext.ProfileBooks.FirstOrDefaultAsync(x => x.BookId == book.Id);
@@ -202,56 +253,70 @@ namespace Bakalauras.data.repositories
             return false;
         }
 
-        public async Task<bool> ChargeSubscribersAndUpdateAuthor(int bookId)
+        public async Task<int> ChargeSubscribersAndUpdateAuthor(int bookId,int chapterId)
         {
-            // reikia padaryt metodus matomus cia.
-            //taip pat, kas buna, kai naudotojas neturi pakankamai tasku? Tuomet jam nepridedam skyriaus prie ProfileBook
-            //skyriu saraso
-
-            //Taip pat, gaunant skyrius, reikia pakeisti, kad naudotojui vaizduotu skyrius, tik pateiktus skyriu sarase
-            //Jei knyga prenumeruojama is naujo, reikia surast kuriu skyriu truksta useriui ir juos dadet, prie InitialPrice
-
-
-
-
-
-            //
             // Get the book and author profile
             var book = await GetAsync(bookId);
             var authorProfile = await _ProfileRepository.GetAsync((
                                 await _UserManager.FindByIdAsync(book.UserId)).Id);
 
             // Get all subscribers for the book
-            var subscribers = await _ProfileRepository.GetSubscribersForBook(bookId);
+            var subscribers = await _ProfileRepository.GetBookSubscribers(bookId);
 
+            int chargedUserCount = 0;
             // Iterate through the subscribers and process payments
             foreach (var subscriber in subscribers)
             {
-                var profileBook = await _ProfileRepository.GetProfileBookRecordSubscribed(bookId, subscriber.Id);
-
                 if (subscriber.Points < book.ChapterPrice)
                 {
-                    return false; // Insufficient points
+                    break; // Insufficient points
                 }
-
-                subscriber.Points -= bookPeriodPoints;
+                chargedUserCount += 1;
 
                 var oldPB = await _ProfileRepository.GetProfileBookRecordSubscribed(book.Id, subscriber.Id);
-                var BoughtChapterList = _ProfileRepository.ConvertStringToIds(oldPB.BoughtChapterList);
-                if (BoughtChapterList == null) { BoughtChapterList = new List<int>(); }
 
-                BoughtChapterList.AddRange(profileOffer.MissingChapters);
-                oldPB.BoughtChapterList = _ProfileRepository.ConvertIdsToString(BoughtChapterList);
+                if (oldPB.WasUnsubscribed)
+                {
+                    List<Chapter> chapters = await _ChaptersRepository.GetManyAsync(bookId);
+                    List<int> chapterIds = new List<int>();
+                    var BoughtChapterList = _ProfileRepository.ConvertStringToIds(oldPB.BoughtChapterList);
+                    HandleBookWasSubscribed(ref chapterIds, BoughtChapterList, chapters);
+                    BoughtChapterList.AddRange(chapterIds);
+                    oldPB.BoughtChapterList = _ProfileRepository.ConvertIdsToString(BoughtChapterList);
+                    subscriber.Points -= book.ChapterPrice*chapterIds.Count;
+                    authorProfile.Points += book.ChapterPrice * chapterIds.Count;
+                }
+                else
+                {
+                    var BoughtChapterList = _ProfileRepository.ConvertStringToIds(oldPB.BoughtChapterList);
+                    if (BoughtChapterList == null) { BoughtChapterList = new List<int>(); }
+
+                    BoughtChapterList.Add(chapterId);
+                    oldPB.BoughtChapterList = _ProfileRepository.ConvertIdsToString(BoughtChapterList);
+                    subscriber.Points -= book.ChapterPrice;
+                    authorProfile.Points += book.ChapterPrice;
+                }              
 
                 await _ProfileRepository.UpdateProfileBookRecord(oldPB);
-
-                authorProfile.Points += bookPeriodPoints;
+                await _ProfileRepository.UpdateAsync(authorProfile);
             }
 
             // Update the author's profile
-            await _ProfileRepository.UpdateAsync(authorProfile);
+            await _ProfileRepository.UpdateAsync(authorProfile);          
 
-            return true;
+            return chargedUserCount;
+        }
+
+        public void HandleBookWasSubscribed(ref List<int> chapterIds,List<int> BoughtChapterList, List<Chapter> actualChapters)
+        {
+            
+            List<int> actualChapterIds = actualChapters.Select(x => x.Id).ToList();
+            //if some chapters were bought, get their ids, else buy all chapters
+            if (BoughtChapterList != null)
+                chapterIds = actualChapterIds.Where(x => !BoughtChapterList.Contains(x)).ToList();
+            else
+                chapterIds = actualChapterIds;
+
         }
 
     }

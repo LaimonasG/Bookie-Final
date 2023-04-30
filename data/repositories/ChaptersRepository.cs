@@ -7,17 +7,17 @@ using System.Text.RegularExpressions;
 using System.Text;
 using static Bakalauras.data.dtos.ChaptersDto;
 using iText.Commons.Actions.Contexts;
+using Ganss.Xss;
 
 namespace Bakalauras.data.repositories
 {
     public interface IChaptersRepository
     {
-        Task CreateAsync(Chapter chapter,int isFinished);
+        Task<int> CreateAsync(Chapter chapter,int isFinished);
         Task DeleteAsync(Chapter chapter);
         Task<Chapter?> GetAsync(int chapterId, int bookId);
-        Task<IReadOnlyList<Chapter>> GetManyAsync(int bookId);
+        Task<List<Chapter>> GetManyAsync(int bookId);
      //   Task<List<int>> GetManyChapterIdsAsync(int bookId);
-        Task<List<Chapter>> GetManyUserBookChaptersAsync(List<int> ids);
         Task UpdateAsync(Chapter chapter);
         string ExtractTextFromPDf(IFormFile file);
     }
@@ -30,7 +30,7 @@ namespace Bakalauras.data.repositories
             bookieDBContext = context;
         }
 
-        public async Task CreateAsync(Chapter chapter,int isFinished)
+        public async Task<int> CreateAsync(Chapter chapter,int isFinished)
         {
             var book = bookieDBContext.Books.FirstOrDefault(x => x.Id == chapter.BookId);
             chapter.BookId = chapter.BookId;
@@ -38,6 +38,8 @@ namespace Bakalauras.data.repositories
             bookieDBContext.Chapters.Add(chapter);
             bookieDBContext.Books.Update(book);
             await bookieDBContext.SaveChangesAsync();
+
+            return chapter.Id;
         }
 
         public async Task<Chapter?> GetAsync(int chapterId, int bookId)
@@ -45,7 +47,7 @@ namespace Bakalauras.data.repositories
             return await bookieDBContext.Chapters.FirstOrDefaultAsync(x => x.Id == chapterId && x.BookId == bookId);
         }
 
-        public async Task<IReadOnlyList<Chapter>> GetManyAsync(int bookId)
+        public async Task<List<Chapter>> GetManyAsync(int bookId)
         {
             return await bookieDBContext.Chapters.Where(x => x.BookId == bookId).ToListAsync();
         }
@@ -55,15 +57,6 @@ namespace Bakalauras.data.repositories
         //    var ch = await GetManyAsync(bookId);
         //    return ch.Select(x => x.Id).ToList();
         //}
-
-        public Task<List<Chapter>> GetManyUserBookChaptersAsync(List<int> ids)
-        {
-                var chapters = bookieDBContext.Chapters
-                                     .Where(c => ids.Contains(c.Id))
-                                     .ToListAsync();
-
-                return chapters;
-        }
 
         public async Task UpdateAsync(Chapter chapter)
         {
@@ -93,13 +86,19 @@ namespace Bakalauras.data.repositories
                     for (int i = 1; i < document.GetNumberOfPages() + 1; i++)
                     {
                         var text = PdfTextExtractor.GetTextFromPage(document.GetPage(i));
-                        text = Regex.Replace(text, "( \\n){2,}", "\n");
                         fileContent.Append(text);
                     }
                 }
             }
 
-            return fileContent.ToString();
+            // Sanitize the content
+            var sanitizer = new HtmlSanitizer();
+            var sanitizedContent = sanitizer.Sanitize(fileContent.ToString());
+
+            // Replace newlines with HTML line breaks
+            var contentWithLineBreaks = sanitizedContent.Replace("\n", "<br>");
+
+            return contentWithLineBreaks;
         }
     }
     }
