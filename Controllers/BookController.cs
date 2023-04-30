@@ -41,7 +41,8 @@ namespace Bakalauras.Controllers
         [Route("finished")]
         public async Task<IEnumerable<BookDtoToBuy>> GetManyFinished(string GenreName)
         {
-            var books = await _BookRepository.GetManyAsync(GenreName,1);
+            string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            var books = await _BookRepository.GetManyAsync(GenreName, 1, userId);
             return books;
         }
 
@@ -49,7 +50,8 @@ namespace Bakalauras.Controllers
         [Route("unfinished")]
         public async Task<IEnumerable<BookDtoToBuy>> GetManyUnFinished(string GenreName)
         {
-            var books = await _BookRepository.GetManyAsync(GenreName,0);
+            string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            var books = await _BookRepository.GetManyAsync(GenreName,0,userId);
             return books;
         }
 
@@ -158,7 +160,7 @@ namespace Bakalauras.Controllers
             ////add chapters to book and check for an old subscription
             var chapters = await _ChaptersRepository.GetManyAsync(bookId);
             book.Chapters = chapters;
-            ProfileBook subscription = await _ProfileRepository.GetProfileBookRecordUnSubscribed(bookId, profile.Id);
+            ProfileBook subscription = await _ProfileRepository.GetProfileBookRecord(bookId, profile.Id,true);
             bool hasOldSub = false;
             var bookPeriodPoints = 0.0;
             if (subscription != null)
@@ -218,7 +220,7 @@ namespace Bakalauras.Controllers
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
 
-            ProfileBook prbo = await _ProfileRepository.GetProfileBookRecordSubscribed(bookId, profile.Id);
+            ProfileBook prbo = await _ProfileRepository.GetProfileBookRecord(bookId, profile.Id,false);
 
             if (prbo == null)
                 return BadRequest("Knyga nebuvo prenumeruojama.");

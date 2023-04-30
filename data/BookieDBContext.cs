@@ -79,7 +79,7 @@ namespace Bakalauras.data
                 .HasForeignKey(u => u.PaymentId);
 
             modelBuilder.Entity<ProfileBook>()
-                .HasKey(x => new { x.BookId, x.ProfileId,x.WasUnsubscribed });
+                .HasKey(x => new { x.BookId, x.ProfileId });
 
             modelBuilder.Entity<ProfileBook>()
                 .HasOne(p => p.Profile)

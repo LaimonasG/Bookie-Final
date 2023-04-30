@@ -34,9 +34,7 @@ namespace Bakalauras.data.repositories
 
         List<ProfileBook> GetProfileBooks(Profile profile);
 
-        Task<ProfileBook> GetProfileBookRecordSubscribed(int bookId,int profileId);
-
-        Task<ProfileBook> GetProfileBookRecordUnSubscribed(int bookId, int profileId);
+        Task<ProfileBook> GetProfileBookRecord(int bookId,int profileId,bool isSubscribed);
 
         Task UpdateProfileBookRecord(ProfileBook pb);
 
@@ -303,16 +301,10 @@ namespace Bakalauras.data.repositories
         //    return tupleList;
         //}
 
-        public async Task<ProfileBook> GetProfileBookRecordSubscribed(int bookId, int profileId)
+        public async Task<ProfileBook> GetProfileBookRecord(int bookId, int profileId,bool isSubscribed)
         {
             return await _BookieDBContext.ProfileBooks
-           .SingleOrDefaultAsync(x => x.BookId == bookId && x.ProfileId == profileId && x.WasUnsubscribed == false);
-        }
-
-        public async Task<ProfileBook> GetProfileBookRecordUnSubscribed(int bookId, int profileId)
-        {
-            return await _BookieDBContext.ProfileBooks
-           .SingleOrDefaultAsync(x => x.BookId == bookId && x.ProfileId == profileId && x.WasUnsubscribed == true);
+           .FirstOrDefaultAsync(x => x.BookId == bookId && x.ProfileId == profileId && x.WasUnsubscribed == isSubscribed);
         }
 
         public async Task UpdateProfileBookRecord(ProfileBook pb)
@@ -361,8 +353,9 @@ namespace Bakalauras.data.repositories
         }
 
         public bool WasBookSubscribed(ProfileBook prbo)
-        {        
-            return  _BookieDBContext.ProfileBooks.Contains(prbo);
+        {
+            var pb = _BookieDBContext.ProfileBooks.Where(x => x.WasUnsubscribed == false && x.BookId==prbo.BookId).FirstOrDefault();
+            return (pb !=null) ? true : false;
         }
 
         public bool HasEnoughPoints(double userPoints, double costpoints)
@@ -396,10 +389,11 @@ namespace Bakalauras.data.repositories
         //returns only the chapters that were bought previously
         public async Task<List<BookDtoBought>> GetBookList(List<ProfileBook> prbo)
         {
-            var bookIds = prbo.Select(pb => pb.BookId).ToList();
+            var removeunsUnsubcribed = prbo.Where(x => x.WasUnsubscribed == false).ToList();
+            var bookIds = removeunsUnsubcribed.Select(pb => pb.BookId).ToList();
             var boughtChaptersMap = new Dictionary<int, List<int>>();
 
-            foreach (var temp in prbo)
+            foreach (var temp in removeunsUnsubcribed)
             {
                 var ids = ConvertStringToIds(temp.BoughtChapterList);
                 boughtChaptersMap[temp.BookId] = ids;

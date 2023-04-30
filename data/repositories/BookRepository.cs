@@ -22,7 +22,7 @@ namespace Bakalauras.data.repositories
         Task CreateAsync(Book book, string genreName);
         Task DeleteAsync(Book book);
         Task<Book> GetAsync(int bookId);
-        Task<IReadOnlyList<BookDtoToBuy>> GetManyAsync(string genreName,int isFinished);
+        Task<IReadOnlyList<BookDtoToBuy>> GetManyAsync(string genreName,int isFinished,string userId);
         Task UpdateAsync(Book book);
         Task<List<Book>> GetUserBooksAsync(string userId);
         Task<IReadOnlyList<SubscribeToBookDto>> GetUserSubscribedBooksAsync(Profile profile);
@@ -62,20 +62,37 @@ namespace Bakalauras.data.repositories
             return await _BookieDBContext.Books.FirstOrDefaultAsync(x => x.Id == bookId);
         }
 
-        public async Task<IReadOnlyList<BookDtoToBuy>> GetManyAsync(string genreName,int isFinished)
+        public async Task<IReadOnlyList<BookDtoToBuy>> GetManyAsync(string genreName,int isFinished, string userId)
         {
             var books = await _BookieDBContext.Books.ToListAsync();
             var bookDtos = new List<BookDtoToBuy>();
-
+            var profile = await _ProfileRepository.GetAsync(userId);
+            
             foreach (var book in books)
             {
+                int chapterCount = 0;
                 var chapters = await _ChaptersRepository.GetManyAsync(book.Id);
-                var bookDto = new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description,book.BookPrice,
-                    book.ChapterPrice,chapters.Count(), book.Created, book.UserId, book.Author, book.CoverImagePath,
-                    book.IsFinished);
-                bookDtos.Add(bookDto);
-            }
+                ProfileBook? pb = await _ProfileRepository.GetProfileBookRecord(book.Id, profile.Id, true);
+                if (pb != null)
+                {
+                    List<int> chapterIds = new List<int>();
+                    var boughtChapters = _ProfileRepository.ConvertStringToIds(pb.BoughtChapterList);
+                    HandleBookWasSubscribed(ref chapterIds, boughtChapters, chapters);
 
+                    chapterCount = chapterIds.Count;
+                    var bookDto = new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.BookPrice,
+                    book.ChapterPrice, chapterCount, book.Created, book.UserId, book.Author, book.CoverImagePath,
+                    book.IsFinished);
+                    bookDtos.Add(bookDto);
+                }
+                else
+                {
+                    var bookDto = new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.BookPrice,
+                    book.ChapterPrice, chapters.Count, book.Created, book.UserId, book.Author, book.CoverImagePath,
+                    book.IsFinished);
+                    bookDtos.Add(bookDto);
+                }                                         
+            }
             return bookDtos.Where(y => y.GenreName == genreName && y.IsFinished == isFinished).ToList();
         }
 
@@ -273,7 +290,7 @@ namespace Bakalauras.data.repositories
                 }
                 chargedUserCount += 1;
 
-                var oldPB = await _ProfileRepository.GetProfileBookRecordSubscribed(book.Id, subscriber.Id);
+                var oldPB = await _ProfileRepository.GetProfileBookRecord(book.Id, subscriber.Id,true);
 
                 if (oldPB.WasUnsubscribed)
                 {
