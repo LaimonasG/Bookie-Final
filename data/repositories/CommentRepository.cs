@@ -47,7 +47,6 @@ namespace Bakalauras.data.repositories
                 book = _BookieDBContext.Books.FirstOrDefault(x => x.Id == EntityId);
                 if (book != null)
                 {
-                    cm.BookId = EntityId;
                     cm.EntityId = EntityId;
                     _BookieDBContext.Comments.Add(cm);
                 }
@@ -58,7 +57,6 @@ namespace Bakalauras.data.repositories
                 text = _BookieDBContext.Texts.FirstOrDefault(x => x.Id == EntityId);
                 if (text != null)
                 {
-                    cm.TextId = EntityId;
                     cm.EntityId = EntityId;
                     _BookieDBContext.Comments.Add(cm);
                 }
@@ -70,7 +68,6 @@ namespace Bakalauras.data.repositories
                 chapter = _BookieDBContext.Chapters.FirstOrDefault(x => x.Id == EntityId);
                 if (chapter != null)
                 {
-                    cm.ChapterId = EntityId;
                     cm.EntityId = EntityId;
                     _BookieDBContext.Comments.Add(cm);
                 } 

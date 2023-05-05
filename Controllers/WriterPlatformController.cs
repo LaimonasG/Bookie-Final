@@ -97,7 +97,7 @@ namespace Bakalauras.Controllers
             bool hasText = await _TextRepository.CheckIfUserHasText(user.Id, textId);
             if (!hasText) return BadRequest("Naudotojas neturi prieigos prie šio teksto.");
             return new TextDtoBought(text.Id, text.Name, text.GenreName, text.Content,text.Description, text.Price,
-                text.CoverImagePath,text.Author, text.Created, text.UserId);
+                text.CoverImageUrl, text.Author, text.Created, text.UserId);
         }
 
         [HttpGet]

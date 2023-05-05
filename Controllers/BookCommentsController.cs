@@ -20,7 +20,6 @@ namespace Bakalauras.Controllers
         private readonly ICommentRepository _CommentRepository;
         private readonly UserManager<BookieUser> _UserManager;
         private readonly IAuthorizationService _AuthorizationService;
-        private readonly IBookRepository _BookRepository;
         private const string _Type = "Book";
         public BookCommentsController(ICommentRepository repo, IAuthorizationService authService,
             UserManager<BookieUser> userManager, IBookRepository bookRepository)
@@ -28,7 +27,6 @@ namespace Bakalauras.Controllers
             _CommentRepository = repo;
             _AuthorizationService = authService;
             _UserManager = userManager;
-            _BookRepository = bookRepository;
         }
         [HttpGet]
         public async Task<IEnumerable<CommentDto>> GetMany(int bookId)

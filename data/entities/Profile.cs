@@ -11,9 +11,6 @@ namespace Bakalauras.data.entities
 
         public string? Surname { get; set; }
         public double Points { get; set; }
-        public byte[]? ProfilePicture { get; set; }
-        public string? TextPurchaseDates { get; set; }
-
         public ICollection<ProfileBook>? ProfileBooks { get; set; }
         public ICollection<ProfileText>? ProfileTexts { get; set; }
         public ICollection<DailyQuestionProfile>? DailyQuestionProfiles { get; set; }

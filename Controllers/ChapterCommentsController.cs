@@ -33,7 +33,7 @@ namespace Bakalauras.Controllers
         public async Task<IEnumerable<CommentDto>> GetMany(int chapterId)
         {
             var comments = await _CommentRepository.GetManyAsync(chapterId, _Type);
-            return comments.Select(x => new CommentDto(x.Id, x.EntityId, _Type, DateTime.Now, x.Content, x.UserId, x.Username));
+            return comments.Select(x => new CommentDto(x.Id, x.EntityId, _Type, x.Date, x.Content, x.UserId, x.Username));
         }
 
         [HttpGet]

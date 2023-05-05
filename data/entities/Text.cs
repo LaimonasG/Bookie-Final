@@ -2,6 +2,8 @@
 using System.ComponentModel.DataAnnotations;
 using Bakalauras.Auth.Model;
 using Bakalauras.Auth;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Bakalauras.data.entities
 {
@@ -16,11 +18,12 @@ namespace Bakalauras.data.entities
 
         public double Price { get; set; }
 
+        [Column(TypeName = "text")]
         public string Content { get; set; }
         public string? Description { get; set; }
         public string? Author { get; set; }
 
-        public string? CoverImagePath { get; set; }
+        public string? CoverImageUrl { get; set; }
 
         public virtual ICollection<Comment>? Comments { get; set; }
 

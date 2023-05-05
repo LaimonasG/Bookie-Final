@@ -58,6 +58,10 @@ namespace Bakalauras.Controllers
             {
                 return BadRequest("Failo formatas netinkamas, galima įkelti tik PDF tipo failus.");
             }
+            else if (content.Length > 100000)
+            {
+                return BadRequest("Failo simbolių kiekis viršytas.");
+            }
 
             Chapter chapter = new Chapter { Name = dto.Name, BookId = bookId, Content = content, UserId=UserId };
             int chapterId=await _ChapterRepository.CreateAsync(chapter, int.Parse(dto.IsFinished));
@@ -82,7 +86,7 @@ namespace Bakalauras.Controllers
                 return Forbid();
             }
             if (chapter == null) return NotFound();
-            return new GetChapterDto(chapter.Name, chapter.Content, chapter.BookId);
+            return new GetChapterDto(chapter.Id,chapter.BookId, chapter.UserId, chapter.Name,chapter.Content);
         }
 
         [HttpGet]
@@ -98,7 +102,9 @@ namespace Bakalauras.Controllers
 
             var chapters = await _ChapterRepository.GetManyAsync(bookId);
 
-            return Ok(chapters.Select(x => new GetChapterDto(x.Name, x.Content, x.BookId)).Where(y => y.bookId == bookId));
+            return Ok(chapters.Select(x => 
+            new GetChapterDto(x.Id, x.BookId, x.UserId, x.Name, x.Content))
+                .Where(y => y.BookId == bookId));
         }
 
         [HttpDelete]
@@ -131,7 +137,7 @@ namespace Bakalauras.Controllers
 
             await _ChapterRepository.UpdateAsync(chapter);
 
-            return new GetChapterDto(chapter.Name, chapter.Content, bookId);
+            return new GetChapterDto(chapter.Id, chapter.BookId, chapter.UserId, chapter.Name, chapter.Content);
         }
     }
 }

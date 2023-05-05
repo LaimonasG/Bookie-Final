@@ -1,5 +1,7 @@
 ﻿using Bakalauras.Auth;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Bakalauras.data.entities
 {
@@ -14,6 +16,7 @@ namespace Bakalauras.data.entities
 
         public string Name { get; set; }
 
+        [Column(TypeName = "text")]
         public string Content { get; set; }
 
         public virtual ICollection<Comment>? Comments { get; set; }

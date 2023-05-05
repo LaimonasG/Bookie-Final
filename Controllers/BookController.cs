@@ -252,7 +252,7 @@ namespace Bakalauras.Controllers
             {
                 return BadRequest("Jūs esate knygos autorius.");
             }else
-            if (await _BookRepository.WasBookBought(book))
+            if (await _BookRepository.WasBookBought(book, profile))
             {
                 return BadRequest("Naudotojas jau nusipirkęs šią knygą.");
             }else

@@ -20,13 +20,6 @@ namespace Bakalauras.data.entities
         [Required]
         public string UserId { get; set; }
         public string Username { get; set; }
-
-        public int? ChapterId { get; set; }
-
-        public int? BookId { get; set; }
-
-        public int? TextId { get; set; }
-
          public BookieUser User { get; set; }
 
     }

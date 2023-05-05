@@ -12,7 +12,6 @@ namespace Bakalauras.data.repositories
     public interface ITextRepository
     {
         Task CreateAsync(Text Text,string genreName);
-        Task DeleteAsync(Text Text);
         Task<Text?> GetAsync(int TextId);
         Task<IReadOnlyList<Text>> GetManyAsync(string genreName);
         Task UpdateAsync(Text Text);
@@ -24,7 +23,6 @@ namespace Bakalauras.data.repositories
         Task<List<Text>> GetUserTextsAsync(string userId);
 
         Task<List<TextDtoBought>> ConvertTextsTotextDtoBoughtList(List<Text> texts);
-        Task<string> SaveCoverImageText(IFormFile coverImage);
     }
 
     public class TextsRepository : ITextRepository
@@ -79,12 +77,6 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(Text Text)
-        {
-            _BookieDBContext.Texts.Remove(Text);
-            await _BookieDBContext.SaveChangesAsync();
-        }
-
         public async Task CreateProfileTextAsync(ProfileText pb)
         {
             _BookieDBContext.ProfileTexts.Add(pb);
@@ -124,7 +116,7 @@ namespace Bakalauras.data.repositories
                     Content: text.Content,
                     Description: text.Description,
                     Price: text.Price,
-                    CoverImageUrl:text.CoverImagePath,
+                    CoverImageUrl:text.CoverImageUrl,
                     Author:text.Author,
                     Created: text.Created,
                     UserId: text.UserId
@@ -132,24 +124,6 @@ namespace Bakalauras.data.repositories
                 textDtoBoughtList.Add(textDtoBought);
             }
             return textDtoBoughtList;
-        }
-
-        public async Task<string> SaveCoverImageText(IFormFile coverImage)
-        {
-            if (coverImage == null || coverImage.Length == 0)
-            {
-                return null;
-            }
-
-            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(coverImage.FileName);
-            var filePath = Path.Combine("../bookie-ui-vite/bookie/public/TextImages", fileName);
-
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                await coverImage.CopyToAsync(fileStream);
-            }
-
-            return "/TextImages/" + fileName;
         }
     }
 }

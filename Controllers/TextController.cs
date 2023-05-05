@@ -43,7 +43,7 @@ namespace Bakalauras.Controllers
         public async Task<IEnumerable<TextDtoToBuy>> GetMany(string GenreName)
         {
             var texts = await _Textrepostory.GetManyAsync(GenreName);
-            return texts.Select(x => new TextDtoToBuy(x.Id, x.Name, x.GenreName,x.Description, x.Price,x.CoverImagePath,
+            return texts.Select(x => new TextDtoToBuy(x.Id, x.Name, x.GenreName,x.Description, x.Price,x.CoverImageUrl,
                 x.Author, x.Created, x.UserId)).Where(y => y.GenreName == GenreName);
         }
 
@@ -54,7 +54,7 @@ namespace Bakalauras.Controllers
         {
             var text = await _Textrepostory.GetAsync(textId);
             if (text == null) return NotFound();
-            return new TextDtoToBuy(text.Id, text.Name, text.GenreName,text.Description, text.Price,text.CoverImagePath,
+            return new TextDtoToBuy(text.Id, text.Name, text.GenreName,text.Description, text.Price,text.CoverImageUrl,
                 text.Author, text.Created, text.UserId);
         }
 
@@ -70,6 +70,9 @@ namespace Bakalauras.Controllers
             if (content == "error")
             {
                 return BadRequest("Failo formatas netinkamas, galima įkelti tik PDF tipo failus.");
+            } else if (content.Length > 100000)
+            {
+                return BadRequest("Failo simbolių kiekis viršytas.");
             }
             
             Text text = new Text { Name = dto.Name, GenreName=genreName, Content = content,Price=double.Parse(dto.Price),
@@ -80,7 +83,7 @@ namespace Bakalauras.Controllers
                 using (Stream imageStream = dto.CoverImage.OpenReadStream())
                 {
                     string objectKey = $"images/{dto.CoverImage.FileName}";
-                    text.CoverImagePath = await _BookRepository.UploadImageToS3Async(imageStream,
+                    text.CoverImageUrl = await _BookRepository.UploadImageToS3Async(imageStream,
                         _configuration["AWS:BucketName"], objectKey, _configuration["AWS:AccessKey"],
                         _configuration["AWS:SecretKey"]);
                 }
@@ -89,7 +92,7 @@ namespace Bakalauras.Controllers
 
             await _Textrepostory.CreateAsync(text,genreName);
 
-            return new TextDto(text.Name, text.GenreName, text.Content,text.Description,text.Price,text.CoverImagePath,
+            return new TextDto(text.Name, text.GenreName, text.Content,text.Description,text.Price,text.CoverImageUrl,
                 text.Created);
         }
 
@@ -112,7 +115,7 @@ namespace Bakalauras.Controllers
 
             await _Textrepostory.UpdateAsync(text);
 
-            return new TextDto(text.Name, text.GenreName, text.Content, text.Description, text.Price, text.CoverImagePath,
+            return new TextDto(text.Name, text.GenreName, text.Content, text.Description, text.Price, text.CoverImageUrl,
                text.Created);
         }
 

@@ -4,6 +4,7 @@ using Bakalauras.data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bakalauras.Migrations
 {
     [DbContext(typeof(BookieDBContext))]
-    partial class BookieDBContextModelSnapshot : ModelSnapshot
+    [Migration("20230430205757_changed field name")]
+    partial class changedfieldname
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -175,7 +177,7 @@ namespace Bakalauras.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -364,7 +366,13 @@ namespace Bakalauras.Migrations
                     b.Property<double>("Points")
                         .HasColumnType("float");
 
+                    b.Property<byte[]>("ProfilePicture")
+                        .HasColumnType("varbinary(max)");
+
                     b.Property<string>("Surname")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TextPurchaseDates")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserId")
@@ -433,7 +441,7 @@ namespace Bakalauras.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CoverImageUrl")
                         .HasColumnType("nvarchar(max)");

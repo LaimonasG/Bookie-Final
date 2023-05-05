@@ -30,7 +30,7 @@ namespace Bakalauras.data.repositories
         Task<List<BookDtoBought>> ConvertBooksToBookDtoBoughtList(List<Book> books);
         Task<string> GetAuthorInfo(int bookId);
 
-        Task<bool> WasBookBought(Book book);
+        Task<bool> WasBookBought(Book book,Profile profile);
 
         Task<int> ChargeSubscribersAndUpdateAuthor(int bookId, int chapterId);
 
@@ -263,9 +263,9 @@ namespace Bakalauras.data.repositories
         }
 
 
-        public async Task<bool> WasBookBought(Book book)
+        public async Task<bool> WasBookBought(Book book,Profile profile)
         {
-            var found = await _BookieDBContext.ProfileBooks.FirstOrDefaultAsync(x => x.BookId == book.Id);
+            var found = await _BookieDBContext.ProfileBooks.FirstOrDefaultAsync(x => x.BookId == book.Id && x.ProfileId==profile.Id);
             if (found != null) return true;
             return false;
         }
