@@ -14,6 +14,8 @@ namespace Bakalauras.data.repositories
         Task<int> CreateQuestion(DailyQuestion question);
         Task DeleteAsync(DailyQuestion question);
         Task<GetQuestionDto?> GetQuestionAsync(string date);
+        Task<List<GetQuestionDto?>> GetManyQuestionsAsync();
+
         Task<DailyQuestion?> GetAsync(int id);
         Task<IReadOnlyList<DailyQuestion>> GetManyAsync();
         Task UpdateAsync(DailyQuestion question);
@@ -50,6 +52,35 @@ namespace Bakalauras.data.repositories
             result.Answers.AddRange(answers);
 
             
+            return result;
+        }
+
+        public async Task<List<GetQuestionDto?>> GetManyQuestionsAsync()
+        {
+            var questions = await GetManyAsync();
+            if (questions == null) { return null; }
+
+            var orderedQuestions = questions.OrderByDescending(q => q.Date).ToList();
+
+            List<GetQuestionDto?> result = new List<GetQuestionDto?>();
+
+            foreach (var rez in orderedQuestions)
+            {
+                GetQuestionDto questionDto = new GetQuestionDto
+                (
+                    rez.Id,
+                    rez.Question,
+                    rez.Points,
+                    rez.Date,
+                    new List<Answer>()
+                );
+
+                var answers = await _BookieDBContext.Answers.Where(x => x.QuestionId == rez.Id).ToListAsync();
+                questionDto.Answers.AddRange(answers);
+
+                result.Add(questionDto);
+            }
+
             return result;
         }
 

@@ -36,6 +36,15 @@ namespace Bakalauras.Controllers
             }
 
         [HttpGet]
+        [Route("many")]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<GetQuestionDto>> GetAllQuestions()
+        {
+            var question = await _DailyQuestionRepository.GetManyQuestionsAsync();
+            return Ok(question);
+        }
+
+        [HttpGet]
         [Route("time")]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<ActionResult<DateTime>> GetLastAnswerTime()
