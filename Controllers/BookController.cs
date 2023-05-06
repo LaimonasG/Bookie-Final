@@ -41,7 +41,7 @@ namespace Bakalauras.Controllers
         [Route("finished")]
         public async Task<IEnumerable<BookDtoToBuy>> GetManyFinished(string GenreName)
         {
-            string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);            
             var books = await _BookRepository.GetManyAsync(GenreName, 1, userId);
             return books;
         }
@@ -61,6 +61,15 @@ namespace Bakalauras.Controllers
         public async Task<ActionResult<BookDtoToBuy>> Get(int bookId)
         {
             var book = await _BookRepository.GetAsync(bookId);
+            if (book.Status == Status.Pateikta) return BadRequest("Knyga dar nebuvo patvirtinta");
+            if (book.Status == Status.Atmesta)
+            {
+                if (book.StatusComment != null)
+                    return BadRequest(string.Format("Knyga buvo atmesta, priežastis: {0}", book.StatusComment));
+                else
+                    return BadRequest("Knyga buvo atmesta.");
+            }           
+
             if (book == null) return NotFound();
             var chapters = await _ChaptersRepository.GetManyAsync(book.Id);
             return new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.BookPrice, book.ChapterPrice,
@@ -87,6 +96,7 @@ namespace Bakalauras.Controllers
                 Created = DateTime.Now,
                 UserId = userId,
                 Author = author,
+                Status=Status.Pateikta
             };
 
             if (createBookDto.CoverImage != null)
@@ -114,6 +124,7 @@ namespace Bakalauras.Controllers
         {
             var book = await _BookRepository.GetAsync(bookId);
             if (book == null) return NotFound();
+
             var authRez = await _AuthorizationService.AuthorizeAsync(User, book, PolicyNames.ResourceOwner);
 
             if (!authRez.Succeeded)
@@ -124,6 +135,7 @@ namespace Bakalauras.Controllers
             book.Name = updateBookDto.Name;
             book.Description = updateBookDto.Description;
             book.Created = updateBookDto.Created;
+            book.Status = Status.Pateikta;
 
             await _BookRepository.UpdateAsync(book);
             var chapters = await _ChaptersRepository.GetManyAsync(book.Id);
@@ -138,6 +150,16 @@ namespace Bakalauras.Controllers
         public async Task<ActionResult<ProfileDto>> SubscribeToBook(int bookId)
         {
             var book = await _BookRepository.GetAsync(bookId);
+
+            if (book.Status == Status.Pateikta) return BadRequest("Knyga dar nebuvo patvirtinta");
+            if (book.Status == Status.Atmesta)
+            {
+                if (book.StatusComment != null)
+                    return BadRequest(string.Format("Knyga buvo atmesta, priežastis: {0}", book.StatusComment));
+                else
+                    return BadRequest("Knyga buvo atmesta.");
+            }
+
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
             var authorProfile = await _ProfileRepository.GetAsync((
@@ -240,6 +262,16 @@ namespace Bakalauras.Controllers
         public async Task<ActionResult<ProfileDto>> BuyBook(int bookId)
         {
             var book = await _BookRepository.GetAsync(bookId);
+
+            if (book.Status == Status.Pateikta) return BadRequest("Knyga dar nebuvo patvirtinta");
+            if (book.Status == Status.Atmesta)
+            {
+                if (book.StatusComment != null)
+                    return BadRequest(string.Format("Knyga buvo atmesta, priežastis: {0}", book.StatusComment));
+                else
+                    return BadRequest("Knyga buvo atmesta.");
+            }
+
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
             var authorProfile = await _ProfileRepository.GetAsync((

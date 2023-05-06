@@ -26,7 +26,7 @@ namespace Bakalauras.data.repositories
         Task UpdateAsync(Book book);
         Task<List<Book>> GetUserBooksAsync(string userId);
         Task<IReadOnlyList<SubscribeToBookDto>> GetUserSubscribedBooksAsync(Profile profile);
-        Task<bool> CheckIfUserHasBook(string userId, int bookId);
+        Task<bool> CheckIfUserHasBook(BookieUser user, int bookId);
         Task<List<BookDtoBought>> ConvertBooksToBookDtoBoughtList(List<Book> books);
         Task<string> GetAuthorInfo(int bookId);
 
@@ -64,7 +64,7 @@ namespace Bakalauras.data.repositories
 
         public async Task<IReadOnlyList<BookDtoToBuy>> GetManyAsync(string genreName,int isFinished, string userId)
         {
-            var books = await _BookieDBContext.Books.ToListAsync();
+            var books = await _BookieDBContext.Books.Where(x=>x.Status==Status.Patvirtinta).ToListAsync();
             var bookDtos = new List<BookDtoToBuy>();
             var profile = await _ProfileRepository.GetAsync(userId);
             
@@ -72,6 +72,7 @@ namespace Bakalauras.data.repositories
             {
                 int chapterCount = 0;
                 var chapters = await _ChaptersRepository.GetManyAsync(book.Id);
+
                 ProfileBook? pb = await _ProfileRepository.GetProfileBookRecord(book.Id, profile.Id, true);
                 if (pb != null)
                 {
@@ -142,13 +143,16 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
-        public async Task<bool> CheckIfUserHasBook(string userId, int bookId)
+        public async Task<bool> CheckIfUserHasBook(BookieUser user, int bookId)
         {
-            var profile = await _ProfileRepository.GetAsync(userId);
+            bool isAdmin = await _UserManager.IsInRoleAsync(user,"Admin");
+            if (isAdmin)
+                return true;
+            var profile = await _ProfileRepository.GetAsync(user.Id);
             var profileBook= await _BookieDBContext.ProfileBooks
            .SingleOrDefaultAsync(x => x.BookId == bookId && x.ProfileId == profile.Id);
             var book = await GetAsync(bookId);
-            if (profileBook == null && (book.UserId !=userId)) return false;
+            if (profileBook == null && (book.UserId !=user.Id)) return false;
             return true;
         }
 
@@ -158,7 +162,8 @@ namespace Bakalauras.data.repositories
             foreach (var book in books)
             {
                 var chapters = await _ChaptersRepository.GetManyAsync(book.Id);
-                var bookDtoBought = new BookDtoBought(
+
+                    var bookDtoBought = new BookDtoBought(
                     Id: book.Id,
                     Name: book.Name,
                     Chapters: (ICollection<Chapter>)chapters,
@@ -169,7 +174,9 @@ namespace Bakalauras.data.repositories
                     UserId: book.UserId,
                     Author:await GetAuthorInfo(book.Id),
                     CoverImageUrl: book.CoverImagePath,
-                    IsFinished:book.IsFinished
+                    IsFinished:book.IsFinished,
+                    status:book.Status,
+                    statusMessage: book.StatusComment
                 );
                 bookDtoBoughtList.Add(bookDtoBought);
             }

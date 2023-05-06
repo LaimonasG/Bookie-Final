@@ -78,22 +78,5 @@ namespace Bakalauras.Controllers
 
             return Ok(new SuccessfulLoginDto(accessToken));
         }
-
-        [HttpPut]
-        [Route("block")]
-        [Authorize(Roles = BookieRoles.Admin)]
-        public async Task<ActionResult> BlockUser(string userName)
-        {
-            var user = await _UserManager.FindByNameAsync(userName);
-
-            if (user == null)
-                return BadRequest("Vartotojas nerastas.");
-
-            user.isBlocked= true;
-
-            await _UserManager.UpdateAsync(user);
-
-            return Ok(new UserBlockedDto(user.Id,user.UserName,user.isBlocked));
-        }
     }
 }

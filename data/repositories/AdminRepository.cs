@@ -1,4 +1,6 @@
-﻿using Bakalauras.Auth.Model;
+﻿using Bakalauras.Auth;
+using Bakalauras.Auth.Model;
+using Bakalauras.data.dtos;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,29 +8,45 @@ namespace Bakalauras.data.repositories
 {
     public interface IAdminRepository
     {
-        Task<List<BookieUser>> GetUserList();
-        Task BlockUser(string userId);
+        Task<List<UserAdminPageDto>> GetUserList();
     }
     public class AdminRepository : IAdminRepository
     {
         private readonly BookieDBContext _BookieDBContext;
-        public AdminRepository(BookieDBContext context)
+        private readonly IProfileRepository _ProfileRepository;
+        public AdminRepository(BookieDBContext context,IProfileRepository repo)
         {
             _BookieDBContext = context;
+            _ProfileRepository = repo;
         }
 
-        public async Task<List<BookieUser>> GetUserList()
+        public async Task<List<UserAdminPageDto>> GetUserList()
         {
-           return await _BookieDBContext.Users.ToListAsync();
-        }
+            var adminRoleId = await _BookieDBContext.Roles
+                            .Where(r => r.Name == "Admin")
+                            .Select(r => r.Id)
+                            .FirstOrDefaultAsync();
 
-        public async Task BlockUser(string userId)
-        {
-            var user = await _BookieDBContext.Users.Where(x => x.Id == userId).FirstOrDefaultAsync();
-            user.isBlocked = true;
+            List<BookieUser>users=new List<BookieUser>();
+            if (adminRoleId != null)
+            {
+                var userIds = await _BookieDBContext.UserRoles.Where(x => x.RoleId == adminRoleId).Select(x => x.UserId)
+           .ToListAsync();
+                users = await _BookieDBContext.Users.Where(x => !userIds.Contains(x.Id)).ToListAsync();
+            }
+            else
+            {
+                users = await _BookieDBContext.Users.ToListAsync();
+            }  
 
-             _BookieDBContext.Users.Update(user);
-            await _BookieDBContext.SaveChangesAsync();
+            List<UserAdminPageDto> rez = new List<UserAdminPageDto>();
+            foreach (var user in users)
+            {
+                var profile = await _ProfileRepository.GetAsync(user.Id);
+                UserAdminPageDto temp = new UserAdminPageDto(user.Id,user.UserName,user.Email,user.isBlocked ? 1:0,profile.Points);
+                rez.Add(temp);
+            }
+            return rez;
         }
     }
 }

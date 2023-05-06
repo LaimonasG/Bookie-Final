@@ -8,10 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using static Bakalauras.data.dtos.ChaptersDto;
 using Microsoft.AspNetCore.Identity;
-using System.Net;
-using System.Text;
 
 namespace Bakalauras.Controllers
 {
@@ -54,6 +51,16 @@ namespace Bakalauras.Controllers
         {
             var text = await _Textrepostory.GetAsync(textId);
             if (text == null) return NotFound();
+
+            if (text.Status == Status.Pateikta) return BadRequest("Tekstas dar nebuvo patvirtintas");
+            if (text.Status == Status.Atmesta)
+            {
+                if (text.StatusComment != null)
+                    return BadRequest(string.Format("Tekstas buvo atmestas, priežastis: {0}", text.StatusComment));
+                else
+                    return BadRequest("Tekstas buvo atmestas.");
+            }
+  
             return new TextDtoToBuy(text.Id, text.Name, text.GenreName,text.Description, text.Price,text.CoverImageUrl,
                 text.Author, text.Created, text.UserId);
         }
@@ -76,7 +83,7 @@ namespace Bakalauras.Controllers
             }
             
             Text text = new Text { Name = dto.Name, GenreName=genreName, Content = content,Price=double.Parse(dto.Price),
-                UserId = user.Id,Author=author,Description=dto.Description,Created=DateTime.Now};
+                UserId = user.Id,Author=author,Description=dto.Description,Created=DateTime.Now,Status=Status.Pateikta};
 
             if (dto.CoverImage != null)
             {
@@ -112,6 +119,7 @@ namespace Bakalauras.Controllers
             if (dto.Name != null) { text.Name = dto.Name; }
             if (dto.File != null) { text.Content = _ChaptersRepository.ExtractTextFromPDf(dto.File); }
             if (double.Parse(dto.Price) != 0) { text.Price = double.Parse(dto.Price); }
+            text.Status = Status.Pateikta;
 
             await _Textrepostory.UpdateAsync(text);
 
@@ -119,24 +127,23 @@ namespace Bakalauras.Controllers
                text.Created);
         }
 
-        //[HttpDelete]
-        //[Route("{textId}")]
-        //public async Task<ActionResult> Remove(int textId)
-        //{
-        //    var text = await _Textrepostory.GetAsync(textId);
-        //    if (text == null) return NotFound();
-        //    await _Textrepostory.DeleteAsync(text);
-
-        //    //204
-        //    return NoContent();
-        //}
-
         [HttpPut]
         [Route("{textId}/buy")]
         [Authorize(Roles = $"{BookieRoles.BookieReader},{BookieRoles.Admin}")]
         public async Task<ActionResult> PurchaseText(int textId)
         {
             var text = await _Textrepostory.GetAsync(textId);
+            if(text== null) return NotFound();
+
+            if (text.Status == Status.Pateikta) return BadRequest("Tekstas dar nebuvo patvirtintas");
+            if (text.Status == Status.Atmesta)
+            {
+                if (text.StatusComment != null)
+                    return BadRequest(string.Format("Tekstas buvo atmestas, priežastis: {0}", text.StatusComment));
+                else
+                    return BadRequest("Tekstas buvo atmestas.");
+            }
+
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
             var authorProfile = await _ProfileRepository.GetAsync((

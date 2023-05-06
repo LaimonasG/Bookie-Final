@@ -15,7 +15,7 @@ namespace Bakalauras.data.repositories
         Task<Text?> GetAsync(int TextId);
         Task<IReadOnlyList<Text>> GetManyAsync(string genreName);
         Task UpdateAsync(Text Text);
-        Task<List<Text>> GetUserBoughtTextsAsync(string userId);
+        Task<List<ProfileText>> GetProfileTexts(Profile profile);
         Task CreateProfileTextAsync(ProfileText pb);
         Task<bool> WasTextBought(Text text);
         Task<bool> CheckIfUserHasText(string userId, int textId);
@@ -23,6 +23,10 @@ namespace Bakalauras.data.repositories
         Task<List<Text>> GetUserTextsAsync(string userId);
 
         Task<List<TextDtoBought>> ConvertTextsTotextDtoBoughtList(List<Text> texts);
+        Task DeleteAsync(Text text);
+
+        Task<List<TextDtoBought>> GetTextList(List<ProfileText> prbo);
+
     }
 
     public class TextsRepository : ITextRepository
@@ -50,25 +54,20 @@ namespace Bakalauras.data.repositories
 
         public async Task<IReadOnlyList<Text>> GetManyAsync(string genreName)
         {
-            return await _BookieDBContext.Texts.Where(x => x.GenreName == genreName).ToListAsync();
+            return await _BookieDBContext.Texts.Where(x => x.GenreName == genreName && x.Status==Status.Patvirtinta).ToListAsync();
         }
 
-        public async Task<List<Text>> GetUserBoughtTextsAsync(string userId)
+        public async Task DeleteAsync(Text text)
         {
-            var profile = await _ProfileRepository.GetAsync(userId);
-            var profileTexts = await _BookieDBContext.ProfileTexts
-                         .Where(pt => pt.ProfileId == profile.Id)
-                         .Select(pt => pt.TextId)
-                         .ToListAsync();
+            _BookieDBContext.Texts.Remove(text);
+            await _BookieDBContext.SaveChangesAsync();
+        }
 
-            if (profileTexts == null)
-            {
-                return null;
-            }
-            var userTexts = await _BookieDBContext.Texts
-                         .Where(t => profileTexts.Contains(t.Id))
-                         .ToListAsync();
-            return userTexts;
+        public async Task<List<ProfileText>> GetProfileTexts(Profile profile)
+        {
+            var texts = await _BookieDBContext.Texts.Where(x => x.Status == Status.Patvirtinta).ToListAsync();
+            var textIds = texts.Select(x => x.Id).ToList();
+            return await _BookieDBContext.ProfileTexts.Where(x => x.ProfileId == profile.Id && textIds.Contains(x.TextId)).ToListAsync();
         }
 
         public async Task UpdateAsync(Text Text)
@@ -124,6 +123,36 @@ namespace Bakalauras.data.repositories
                 textDtoBoughtList.Add(textDtoBought);
             }
             return textDtoBoughtList;
+        }
+
+        public async Task<List<TextDtoBought>> GetTextList(List<ProfileText> prbo)
+        {
+            var boughtTexts = new List<TextDtoBought>();
+
+            foreach (var pr in prbo)
+            {
+                var text = await GetAsync(pr.TextId);
+                if (text != null)
+                {
+                    var textDtoBought = new TextDtoBought
+                    (
+                        Id: text.Id,
+                        Name: text.Name,
+                        GenreName: text.GenreName,
+                        Content: text.Content,
+                        Description: text.Description,
+                        Price: text.Price,
+                        CoverImageUrl: text.CoverImageUrl,
+                        Created: text.Created,
+                        UserId: text.UserId,
+                        Author: text.Author
+                    );
+
+                    boughtTexts.Add(textDtoBought);
+                }
+            }
+
+            return boughtTexts;
         }
     }
 }

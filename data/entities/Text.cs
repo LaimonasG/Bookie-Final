@@ -29,6 +29,10 @@ namespace Bakalauras.data.entities
 
         public DateTime Created { get; set; }
 
+        public Status Status { get; set; }
+
+        public string? StatusComment { get; set; }
+
         public BookieUser User { get; set; }
     }
 }

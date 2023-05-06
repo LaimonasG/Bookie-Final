@@ -57,7 +57,7 @@ namespace Bakalauras.Controllers
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var profile = await _ProfileRepository.GetAsync(user.Id);
-            var profileBooks =  _ProfileRepository.GetProfileBooks(profile);
+            var profileBooks =  await _ProfileRepository.GetProfileBooks(profile);
             var result = await _ProfileRepository.GetBookList(profileBooks);
             if (profile == null) return NotFound();
 
@@ -70,52 +70,13 @@ namespace Bakalauras.Controllers
         public async Task<ActionResult<List<BookDtoBought>>> GetReaderTexts()
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            var result = await _Textrepostory.GetUserBoughtTextsAsync(user.Id);
-            if (result == null) return NotFound();
+            var profile = await _ProfileRepository.GetAsync(user.Id);
+            var profileTexts = await _Textrepostory.GetProfileTexts(profile);
+            var result = await _Textrepostory.GetTextList(profileTexts);
+            if (profile == null) return NotFound();
 
             return Ok(result);
         }
-
-        //[HttpGet]
-        //[Route("picture")]
-        //[Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        //public async Task<ActionResult<ProfileDto>> GetProfilePicture()
-        //{
-        //    var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-        //    var profile = await _ProfileRepository.GetAsync(user.Id);
-        //    if (profile == null) return NotFound();
-
-        //    if (profile.ProfilePicture == null) { return NotFound(); }
-
-        //    return Ok(File(profile.ProfilePicture, "image/png"));
-        //}
-
-        //[HttpGet]
-        //[Route("paymentOffers")]
-        //[Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        //public async Task<ActionResult<List<ProfileBookOffersDto>>> GetReaderPaymentOffers()
-        //{
-        //    var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-        //    var profile = await _ProfileRepository.GetAsync(user.Id);
-        //    if (profile == null) return NotFound();
-
-        //    List<ProfileBookOffersDto> offersList = await _ProfileRepository.CalculateBookOffers(profile);
-
-        //    return Ok(offersList);
-        //}
-
-        //[HttpGet]
-        //[Route("payForPoints")]
-        //[Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        //public async Task<ActionResult<ProfilePurchacesDto>> GetPointsPaymentOffers()
-        //{
-        //    var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-        //    var profile = await _ProfileRepository.GetAsync(user.Id);
-
-        //    if (profile == null) return NotFound();
-
-        //    return Ok(_ProfileRepository.GetProfilePurchases(profile));
-        //}
 
         [HttpPut]
         [Route("{userId}")]
@@ -159,78 +120,6 @@ namespace Bakalauras.Controllers
 
             return Ok();
         }
-
-        //[HttpPut]
-        //[Route("{userId}/picture")]
-        //[Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        //public async Task<ActionResult<ProfileDto>> UploadProfilePicture(IFormFile file)
-        //{
-        //    var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-        //    var profile = await _ProfileRepository.GetAsync(user.Id);
-        //    if (profile == null) return NotFound();
-
-        //    if (file.ContentType != "image/jpeg" && file.ContentType != "image/png")
-        //    {
-        //        return BadRequest("Leistini tik PNG ir JPG formato paveikslėliai.");
-        //    }
-
-        //    byte[] fileBytes;
-        //    using (var memoryStream = new MemoryStream())
-        //    {
-        //        await file.CopyToAsync(memoryStream);
-        //        fileBytes = memoryStream.ToArray();
-        //    }
-
-        //    Update the profile object with the uploaded file data
-        //    profile.ProfilePicture = fileBytes;
-
-        //    await _ProfileRepository.UpdateAsync(profile);
-
-        //    return Ok();
-        //}
-
-        //[HttpPut]
-        //[Route("{userId}/pay")]
-        //[Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        //public async Task<ActionResult<PaymentDto>> PayForSubscribtion(ProfilePayDto dto)
-        //{
-        //    var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-        //    var authorProfile = await _ProfileRepository.GetAsync((
-        //                        await _UserManager.FindByIdAsync((
-        //                        await _BookRepository.GetAsync(dto.bookId)).UserId)).Id);
-
-        //    var profile = await _ProfileRepository.GetAsync(user.Id);
-        //    if (profile == null) return NotFound();
-
-        //    var profileBook = await _ProfileRepository.GetProfileBookRecordSubscribed(dto.bookId, profile.Id);
-        //    var book = await _BookRepository.GetAsync(dto.bookId);
-        //    var profileOffer = _ProfileRepository.CalculateBookOffer(profileBook);
-        //    var bookPeriodPoints = book.ChapterPrice * profileOffer.MissingChapters.Count;
-        //    if (profile.Points < bookPeriodPoints)
-        //    {
-        //        return BadRequest("Nepakanka taškų atlikti šį veiksmą.");
-        //    }
-     
-        //        profile.Points -= bookPeriodPoints;
-                
-
-        //        var oldPB = await _ProfileRepository.GetProfileBookRecordSubscribed(book.Id, profile.Id);
-        //        var BoughtChapterList = _ProfileRepository.ConvertStringToIds(oldPB.BoughtChapterList);
-        //        if (BoughtChapterList == null) { BoughtChapterList = new List<int>(); }
-
-        //        BoughtChapterList.AddRange(profileOffer.MissingChapters);
-        //        oldPB.BoughtChapterList = _ProfileRepository.ConvertIdsToString(BoughtChapterList);
-
-        //        await _ProfileRepository.UpdateProfileBookRecord(oldPB);
-
-        //        authorProfile.Points += bookPeriodPoints;
-            
-
-        //    await _ProfileRepository.UpdateAsync(profile);
-        //    await _ProfileRepository.UpdateAsync(authorProfile);
-
-        //    return Ok(new PaymentCreateDto(dto.bookId,bookPeriodPoints));
-        //}
 
         [HttpPut]
         [Route("pay")]

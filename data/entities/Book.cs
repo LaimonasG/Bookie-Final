@@ -28,10 +28,22 @@ public class Book : IUserOwnedResource
 
     public DateTime Created { get; set; }
 
+    public Status Status { get; set; }
+
+    public string? StatusComment { get; set; }
+
     public virtual ICollection<Chapter>? Chapters { get; set; }
 
     public virtual ICollection<Comment>? Comments { get; set; }
 
    public BookieUser User { get; set; }
 
+}
+
+public enum Status
+{
+    Pateikta,
+    Vertinama,
+    Patvirtinta,
+    Atmesta
 }

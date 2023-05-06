@@ -12,6 +12,7 @@ using PagedList;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
 using static System.Reflection.Metadata.BlobBuilder;
 
 namespace Bakalauras.data.repositories
@@ -24,15 +25,10 @@ namespace Bakalauras.data.repositories
         Task<IReadOnlyList<Profile>> GetManyAsync();
         Task UpdateAsync(Profile profile);
         Task<string> UpdatePersonalInfoAsync(PersonalInfoDto dto, BookieUser user,Profile profile);
-      //  Task<List<ProfileBookOffersDto>> CalculateBookOffers(Profile profile);
-     //   ProfileBookOffersDto CalculateBookOffer(ProfileBook pb);
-        //ProfileBookOffersDto CalculateBookSubscriptionPrice(ProfileBook pb,Book book);
-        //ProfilePurchacesDto GetProfilePurchases(Profile profile);
 
-        //List<Tuple<int, int>> ConvertToTupleList(string tupleListString);
         Task RemoveProfileBookAsync(ProfileBook prbo);
 
-        List<ProfileBook> GetProfileBooks(Profile profile);
+        Task<List<ProfileBook>> GetProfileBooks(Profile profile);
 
         Task<ProfileBook> GetProfileBookRecord(int bookId,int profileId,bool isSubscribed);
 
@@ -44,13 +40,10 @@ namespace Bakalauras.data.repositories
 
         List<int> ConvertStringToIds(string data);
 
-        //string ConvertToStringTextDate(Tuple<int, DateTime> tuple);
 
         bool WasBookSubscribed(ProfileBook prbo);
 
         bool HasEnoughPoints(double userPoints,double costpoints);
-
-        //Task<List<Payment>> GetPaymentList();
 
         Task PayForPoints(Profile userWallet, Payment payment);
 
@@ -67,9 +60,8 @@ namespace Bakalauras.data.repositories
     }
     public class ProfileRepository : IProfileRepository
     {
-        private const string SystemWalletId = "cf015658-171a-47ca-be37-98f04857c91d";
+        private const string _SystemWalletId = "cf015658-171a-47ca-be37-98f04857c91d";
         private readonly BookieDBContext _BookieDBContext;
-        private readonly UserManager<BookieUser> _UserManager;
         public ProfileRepository(BookieDBContext context)
         {
             _BookieDBContext = context;
@@ -169,28 +161,11 @@ namespace Bakalauras.data.repositories
             return null;
         }
 
-        //public async Task<List<ProfileBookOffersDto>> CalculateBookOffers(Profile profile)
-        //{
-        //    List<ProfileBookOffersDto> offersList = new List<ProfileBookOffersDto>();
-        //    List<ProfileBook> pb = GetProfileBooks(profile);
-
-        //    if (pb != null)
-        //    {
-        //        for (int i = 0; i < pb.Count; i++)
-        //        {
-        //            var offer=CalculateBookOffer(pb.ElementAt(i));
-        //            offersList.Add(offer);
-        //        }
-        //    }
-
-        //    await UpdateAsync(profile);
-
-        //    return offersList;
-        //}
-
-        public List<ProfileBook> GetProfileBooks(Profile profile)
+        public async Task<List<ProfileBook>> GetProfileBooks(Profile profile)
         {
-            return _BookieDBContext.ProfileBooks.Where(x=>x.ProfileId==profile.Id).ToList();
+            var books=await _BookieDBContext.Books.Where(x=>x.Status==Status.Patvirtinta).ToListAsync();
+            var bookIds=books.Select(x=>x.Id).ToList();
+            return await _BookieDBContext.ProfileBooks.Where(x=>x.ProfileId==profile.Id && bookIds.Contains(x.BookId)).ToListAsync();
         }
 
         public async Task<ProfileBook> GetProfileBookRecord(int bookId, int profileId,bool isSubscribed)
@@ -211,10 +186,6 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
-        //public string ConvertToStringTextDate(Tuple<int, DateTime> tuple)
-        //{
-        //    return $"({tuple.Item1}, {tuple.Item2:o})";
-        //}
 
         public string ConvertIdsToString(List<int> data)
         {
@@ -255,11 +226,6 @@ namespace Bakalauras.data.repositories
             return userPoints >= costpoints;
         }
 
-        //public async Task<List<Payment>> GetPaymentList()
-        //{
-        //    return await _BookieDBContext.Payments.ToListAsync();
-        //}
-
         public async Task<Payment> GetPayment(int paymentId)
         {
             return await _BookieDBContext.Payments.FirstOrDefaultAsync(x => x.Id == paymentId);
@@ -268,7 +234,7 @@ namespace Bakalauras.data.repositories
         public async Task PayForPoints(Profile userWallet, Payment payment)
         {
             PaymentUser pu = new PaymentUser { PaymentId = payment.Id, ProfileId = userWallet.Id, Date = DateTime.Now };
-            Profile SystemWallet = await GetAsync(SystemWalletId);
+            Profile SystemWallet = await GetAsync(_SystemWalletId);
             SystemWallet.Points += payment.Price;
             userWallet.Points += payment.Points;
 
@@ -312,7 +278,9 @@ namespace Bakalauras.data.repositories
                     book.UserId,
                     book.Author,
                     book.CoverImagePath,
-                    book.IsFinished
+                    book.IsFinished,
+                    book.Status,
+                    book.StatusComment
                     );
                     boughtBooks.Add(temp);
                 }

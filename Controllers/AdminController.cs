@@ -8,6 +8,7 @@ using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authorization;
 using System.Data;
+using Bakalauras.Auth;
 
 namespace Bakalauras.Controllers
 {
@@ -15,32 +16,77 @@ namespace Bakalauras.Controllers
     [Route("api/admin")]
     public class AdminController:ControllerBase
     {
-        private readonly BookieDBContext _BookieDBContext;
-        private readonly IBookRepository _BookRepository;
         private readonly IAdminRepository _AdminRepository;
         private readonly UserManager<BookieUser> _UserManager;
         private readonly RoleManager<IdentityRole> _RoleManager;
-        public AdminController(BookieDBContext context, UserManager<BookieUser> mng, IBookRepository bookRepository,
-            IAdminRepository adrep, RoleManager<IdentityRole> roleManager)
+        private readonly IProfileRepository _ProfileRepository;
+        private readonly BookieDBContext _BookieDBContext;
+        private readonly ICommentRepository _CommentRepository;
+        private readonly IBookRepository _BookRepository;
+        private readonly ITextRepository _TextRepository;
+        public AdminController(UserManager<BookieUser> mng,IAdminRepository adrep, RoleManager<IdentityRole> roleManager,
+            IProfileRepository repp, BookieDBContext dbc, ICommentRepository commentRepository, IBookRepository bookRepository,
+            ITextRepository textRepository)
         {
-            _BookieDBContext = context;
             _UserManager = mng;
-            _BookRepository = bookRepository;
             _AdminRepository = adrep;
             _RoleManager = roleManager;
+            _ProfileRepository = repp;
+            _BookieDBContext = dbc;
+            _CommentRepository = commentRepository;
+            _BookRepository = bookRepository;
+            _TextRepository= textRepository;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<BookieUser>>> GetUsers()
+        [Route("users")]
+        [Authorize(Roles = BookieRoles.Admin)]
+        public async Task<ActionResult<List<UserAdminPageDto>>> GetUsers()
         {
             var users = await _AdminRepository.GetUserList();
             return users;
         }
 
         [HttpPut]
-        public async Task BlockUser(string userId)
+        [Route("block")]
+        [Authorize(Roles = BookieRoles.Admin)]
+        public async Task<ActionResult> UpdateUserBlockedStatus(UserBlockedDto dto)
         {
-            await _AdminRepository.BlockUser(userId);
+            var user = await _UserManager.FindByIdAsync(dto.Id);
+
+            if (user == null)
+                return BadRequest("Vartotojas nerastas.");
+
+            if (dto.isBlocked == 0)
+                user.isBlocked = true;
+            else if (dto.isBlocked == 1)
+                user.isBlocked = false;
+            else
+                return BadRequest("Duomenys netinkami.");
+
+            await _UserManager.UpdateAsync(user);
+
+            return Ok(new UserBlockedDto(user.Id, user.UserName, user.isBlocked ? 1 :0));
+        }
+
+        [HttpPut]
+        [Route("points")]
+        [Authorize(Roles = BookieRoles.Admin)]
+        public async Task<ActionResult> UpdateUserPoints(UserAdminPageDto dto)
+        {
+            var user = await _UserManager.FindByIdAsync(dto.id);
+
+            if (user == null)
+                return BadRequest("Vartotojas nerastas.");
+
+            var profile = await _ProfileRepository.GetAsync(user.Id);
+            profile.Points = dto.points;
+
+            _BookieDBContext.Profiles.Update(profile);
+
+            await _BookieDBContext.SaveChangesAsync();
+
+            return Ok();
         }
 
         [HttpPost]
@@ -66,6 +112,45 @@ namespace Bakalauras.Controllers
             }
 
             return BadRequest(result.Errors);
+        }
+
+        [HttpDelete]
+        [Route("comment")]
+        [Authorize(Roles = BookieRoles.Admin)]
+        public async Task<ActionResult> RemoveComment(DeleteCommentDto dto)
+        {
+            var comment = await _CommentRepository.GetAsync(dto.commentId, dto.entityId, dto.type);
+            if (comment == null) return BadRequest("Komentaras nerastas.");
+            await _CommentRepository.DeleteAsync(comment);
+
+            //204
+            return NoContent();
+        }
+
+        [HttpDelete]
+        [Route("book")]
+        [Authorize(Roles = BookieRoles.Admin)]
+        public async Task<ActionResult> RemoveBook(DeleteBookDto dto)
+        {
+            var book = await _BookRepository.GetAsync(dto.bookId);
+            if (book == null) return BadRequest("Knyga nerasta.");
+            await _BookRepository.DeleteAsync(book);
+
+            //204
+            return NoContent();
+        }
+
+        [HttpDelete]
+        [Route("text")]
+        [Authorize(Roles = BookieRoles.Admin)]
+        public async Task<ActionResult> RemoveText(DeleteTextDto dto)
+        {
+            var text = await _TextRepository.GetAsync(dto.textId);
+            if (text == null) return BadRequest("Tekstas nerastas.");
+            await _TextRepository.DeleteAsync(text);
+
+            //204
+            return NoContent();
         }
     }
 }

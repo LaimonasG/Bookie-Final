@@ -118,13 +118,13 @@ namespace Bakalauras.Controllers
         {
             var book = await _BookRepository.GetAsync(bookId);
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            bool hasBook = await _BookRepository.CheckIfUserHasBook(user.Id, bookId);
+            bool hasBook = await _BookRepository.CheckIfUserHasBook(user, bookId);
             if (!hasBook) return BadRequest("Naudotojas neturi prieigos prie šios knygos.");
 
             var chapters = await _ChaptersRepository.GetManyAsync(bookId);
             return new BookDtoBought(book.Id, book.Name, (ICollection<Chapter>?)chapters, book.GenreName, book.Description,
                 book.ChapterPrice, book.Created, book.UserId, await _BookRepository.GetAuthorInfo(book.Id),book.CoverImagePath,
-                book.IsFinished);
+                book.IsFinished,book.Status,book.StatusComment);
         }
     }
 }

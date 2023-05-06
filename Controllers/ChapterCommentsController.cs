@@ -90,16 +90,5 @@ namespace Bakalauras.Controllers
 
         //    return Ok(new CommentDto(comment.Id, comment.EntityId, _Type, DateTime.Now, comment.Content, comment.UserId, comment.Username));
         //}
-
-        //[HttpDelete]
-        //[Route("{commentId}")]
-        //public async Task<ActionResult> Remove(int commentId, int chapterId)
-        //{
-        //    var comment = await _CommentRepository.GetAsync(commentId, chapterId, _Type);
-        //    if (comment == null) return NotFound();
-        //    await _CommentRepository.DeleteAsync(comment);
-
-        //    return NoContent();
-        //}
     }
 }

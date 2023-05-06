@@ -94,7 +94,7 @@ namespace Bakalauras.Controllers
         public async Task<ActionResult<IEnumerable<GetChapterDto>>> GetAllChapters(int bookId)
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
-            var hasBook = await _BookRepository.CheckIfUserHasBook(user.Id, bookId);
+            var hasBook = await _BookRepository.CheckIfUserHasBook(user, bookId);
             if (!hasBook)
             {
                 return BadRequest("Naudotojas neturi prieigos prie šių skyrių.");
