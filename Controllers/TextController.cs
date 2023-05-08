@@ -116,10 +116,24 @@ namespace Bakalauras.Controllers
                 return Forbid();
             }
 
-            if (dto.Name != null) { text.Name = dto.Name; }
-            if (dto.File != null) { text.Content = _ChaptersRepository.ExtractTextFromPDf(dto.File); }
-            if (double.Parse(dto.Price) != 0) { text.Price = double.Parse(dto.Price); }
+            text.Name = dto.Name; 
+            text.Content = _ChaptersRepository.ExtractTextFromPDf(dto.File); 
+            text.Price = double.Parse(dto.Price);
+            text.Created = DateTime.Now;
             text.Status = Status.Pateikta;
+
+            if (dto.CoverImage != null)
+            {
+                using (Stream imageStream = dto.CoverImage.OpenReadStream())
+                {
+                    string objectKey = $"images/{dto.CoverImage.FileName}";
+                    await _BookRepository.DeleteImageFromS3Async(text.CoverImageUrl, _configuration["AWS:AccessKey"],
+                        _configuration["AWS:SecretKey"]);
+                    text.CoverImageUrl = await _BookRepository.UploadImageToS3Async(imageStream,
+                        _configuration["AWS:BucketName"], objectKey, _configuration["AWS:AccessKey"],
+                        _configuration["AWS:SecretKey"]);
+                }
+            }
 
             await _Textrepostory.UpdateAsync(text);
 

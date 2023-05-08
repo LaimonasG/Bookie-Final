@@ -9,6 +9,7 @@ namespace Bakalauras.data.repositories
     public interface IAdminRepository
     {
         Task<List<UserAdminPageDto>> GetUserList();
+        Task<bool> IsBlocked(string userId);
     }
     public class AdminRepository : IAdminRepository
     {
@@ -48,5 +49,11 @@ namespace Bakalauras.data.repositories
             }
             return rez;
         }
+
+        public async Task<bool> IsBlocked(string userId)
+        {
+            return await _BookieDBContext.Users.Where(x => x.Id == userId).Select(y => y.isBlocked).FirstOrDefaultAsync();
+        }
+
     }
 }

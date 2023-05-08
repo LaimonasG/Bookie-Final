@@ -84,5 +84,15 @@ namespace Bakalauras.Controllers
                 return BadRequest(result.Item2);
             }
         }
+
+        [HttpDelete]
+        [Route("{QuestionId}")]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<GetQuestionDto>> DeleteQuestion(int QuestionId)
+        {
+            bool rez = await _DailyQuestionRepository.DeleteQuestionAsync(QuestionId);
+            if (!rez) return BadRequest("Nepavyko ištrinti klausimo.");
+            return NoContent();
+        }
     }
 }

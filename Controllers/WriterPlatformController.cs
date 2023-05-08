@@ -97,7 +97,7 @@ namespace Bakalauras.Controllers
             bool hasText = await _TextRepository.CheckIfUserHasText(user.Id, textId);
             if (!hasText) return BadRequest("Naudotojas neturi prieigos prie šio teksto.");
             return new TextDtoBought(text.Id, text.Name, text.GenreName, text.Content,text.Description, text.Price,
-                text.CoverImageUrl, text.Author, text.Created, text.UserId);
+                text.CoverImageUrl, text.Author, text.Created, text.UserId,text.Status,text.StatusComment);
         }
 
         [HttpGet]
@@ -123,8 +123,8 @@ namespace Bakalauras.Controllers
 
             var chapters = await _ChaptersRepository.GetManyAsync(bookId);
             return new BookDtoBought(book.Id, book.Name, (ICollection<Chapter>?)chapters, book.GenreName, book.Description,
-                book.ChapterPrice, book.Created, book.UserId, await _BookRepository.GetAuthorInfo(book.Id),book.CoverImagePath,
-                book.IsFinished,book.Status,book.StatusComment);
+                book.ChapterPrice,book.BookPrice, book.Created, book.UserId, await _BookRepository.GetAuthorInfo(book.Id),
+                book.CoverImagePath, book.IsFinished,book.Status,book.StatusComment);
         }
     }
 }

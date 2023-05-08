@@ -7,6 +7,11 @@
     public record DeleteBookDto(int bookId);
 
     public record DeleteTextDto(int textId);
+    public record UpdateBookStatus(int status,int bookId,string statusComment);
+    public record UpdateTextStatus(int status, int textId, string statusComment);
+
+
+
 
 
 }

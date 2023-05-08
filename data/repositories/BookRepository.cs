@@ -23,6 +23,9 @@ namespace Bakalauras.data.repositories
         Task DeleteAsync(Book book);
         Task<Book> GetAsync(int bookId);
         Task<IReadOnlyList<BookDtoToBuy>> GetManyAsync(string genreName,int isFinished,string userId);
+        Task<IReadOnlyList<BookDtoBought>> GetManySubmitted();
+        Task<bool> SetBookStatus(int status,int bookId,string statusComment);
+
         Task UpdateAsync(Book book);
         Task<List<Book>> GetUserBooksAsync(string userId);
         Task<IReadOnlyList<SubscribeToBookDto>> GetUserSubscribedBooksAsync(Profile profile);
@@ -97,6 +100,21 @@ namespace Bakalauras.data.repositories
             return bookDtos.Where(y => y.GenreName == genreName && y.IsFinished == isFinished).ToList();
         }
 
+        public async Task<IReadOnlyList<BookDtoBought>> GetManySubmitted()
+        {
+            var books = await _BookieDBContext.Books.Where(x => x.Status == Status.Pateikta).ToListAsync();
+            var bookDtos = new List<BookDtoBought>();
+            foreach (var book in books)
+            {
+                var chapters = await _ChaptersRepository.GetManyAsync(book.Id);
+                    var bookDto = new BookDtoBought(book.Id, book.Name, chapters, book.GenreName, book.Description,
+                        book.ChapterPrice,book.BookPrice, book.Created, book.UserId, book.Author, book.CoverImagePath,
+                    book.IsFinished,book.Status,"");
+                    bookDtos.Add(bookDto);              
+            }
+            return bookDtos;
+        }
+
         public async Task<List<Book>> GetUserBooksAsync(string userId)
         {
             return await _BookieDBContext.Books.Where(x => x.UserId == userId).ToListAsync();
@@ -169,6 +187,7 @@ namespace Bakalauras.data.repositories
                     Chapters: (ICollection<Chapter>)chapters,
                     GenreName: book.GenreName,
                     Description: book.Description,
+                    chapterPrice:book.ChapterPrice,
                     Price: book.BookPrice,
                     Created: book.Created,
                     UserId: book.UserId,
@@ -343,5 +362,20 @@ namespace Bakalauras.data.repositories
 
         }
 
+        public async Task<bool> SetBookStatus(int status, int bookId, string statusComment)
+        {
+            var book = await GetAsync(bookId);
+            if (book == null)
+            {
+                return false;
+            }
+
+            Status bookStatus = (Status)status;
+            book.Status = bookStatus;
+            book.StatusComment = statusComment;
+            await UpdateAsync(book);
+
+            return true;
+        }
     }
 }

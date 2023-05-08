@@ -120,7 +120,7 @@ namespace Bakalauras.Controllers
         [HttpPut]
         [Route("{bookId}")]
         [Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<BookDtoToBuy>> UpdateAsync(int bookId, UpdateBookDto updateBookDto)
+        public async Task<ActionResult<BookDtoToBuy>> UpdateAsync(int bookId, [FromForm] UpdateBookDto updateBookDto)
         {
             var book = await _BookRepository.GetAsync(bookId);
             if (book == null) return NotFound();
@@ -133,9 +133,25 @@ namespace Bakalauras.Controllers
             }
 
             book.Name = updateBookDto.Name;
+            book.GenreName= updateBookDto.GenreName;
             book.Description = updateBookDto.Description;
-            book.Created = updateBookDto.Created;
+            book.Created = DateTime.Now;
+            book.ChapterPrice= updateBookDto.ChapterPrice;
+            book.BookPrice= updateBookDto.BookPrice;
             book.Status = Status.Pateikta;
+
+            if (updateBookDto.coverImage != null)
+            {
+                using (Stream imageStream = updateBookDto.coverImage.OpenReadStream())
+                {
+                    await _BookRepository.DeleteImageFromS3Async(book.CoverImagePath, _configuration["AWS:AccessKey"],
+                        _configuration["AWS:SecretKey"]);
+                    string objectKey = $"images/{updateBookDto.coverImage.FileName}";
+                    book.CoverImagePath = await _BookRepository.UploadImageToS3Async(imageStream,
+                        _configuration["AWS:BucketName"], objectKey, _configuration["AWS:AccessKey"],
+                        _configuration["AWS:SecretKey"]);
+                }
+            }
 
             await _BookRepository.UpdateAsync(book);
             var chapters = await _ChaptersRepository.GetManyAsync(book.Id);

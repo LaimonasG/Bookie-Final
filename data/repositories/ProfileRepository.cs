@@ -273,6 +273,7 @@ namespace Bakalauras.data.repositories
                     boughtChapters,
                     book.GenreName,
                     book.Description,
+                    book.ChapterPrice,
                     book.BookPrice,
                     book.Created,
                     book.UserId,

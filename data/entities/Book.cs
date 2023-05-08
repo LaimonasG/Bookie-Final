@@ -43,7 +43,6 @@ public class Book : IUserOwnedResource
 public enum Status
 {
     Pateikta,
-    Vertinama,
     Patvirtinta,
     Atmesta
 }

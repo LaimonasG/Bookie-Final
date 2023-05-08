@@ -26,6 +26,9 @@ namespace Bakalauras.data.repositories
         Task DeleteAsync(Text text);
 
         Task<List<TextDtoBought>> GetTextList(List<ProfileText> prbo);
+        Task<List<TextDtoBought>> GetSubmittedTextList();
+
+        Task<bool> SetTextStatus(int status, int textId,string statusComment);
 
     }
 
@@ -118,7 +121,9 @@ namespace Bakalauras.data.repositories
                     CoverImageUrl:text.CoverImageUrl,
                     Author:text.Author,
                     Created: text.Created,
-                    UserId: text.UserId
+                    UserId: text.UserId,
+                    status:text.Status,
+                    statusMessage:text.StatusComment
                 );
                 textDtoBoughtList.Add(textDtoBought);
             }
@@ -145,7 +150,9 @@ namespace Bakalauras.data.repositories
                         CoverImageUrl: text.CoverImageUrl,
                         Created: text.Created,
                         UserId: text.UserId,
-                        Author: text.Author
+                        Author: text.Author,
+                        status:text.Status,
+                        statusMessage:text.StatusComment
                     );
 
                     boughtTexts.Add(textDtoBought);
@@ -154,5 +161,49 @@ namespace Bakalauras.data.repositories
 
             return boughtTexts;
         }
+
+        public async Task<List<TextDtoBought>> GetSubmittedTextList()
+        {
+            var texts = await _BookieDBContext.Texts.Where(x => x.Status == Status.Pateikta).ToListAsync();
+            var textDtos = new List<TextDtoBought>();
+            foreach (var text in texts)
+            {
+                    var textDtoBought = new TextDtoBought
+                    (
+                        Id: text.Id,
+                        Name: text.Name,
+                        GenreName: text.GenreName,
+                        Content: text.Content,
+                        Description: text.Description,
+                        Price: text.Price,
+                        CoverImageUrl: text.CoverImageUrl,
+                        Created: text.Created,
+                        UserId: text.UserId,
+                        Author: text.Author,
+                        status:text.Status,
+                        statusMessage:""
+                    );
+
+                textDtos.Add(textDtoBought);              
+            }
+            return textDtos;
+
+        }
+
+        public async Task<bool> SetTextStatus(int status, int textId,string statusComment)
+        {
+            var text = await GetAsync(textId);
+            if (text == null)
+            {
+                return false;
+            }
+
+                Status textStatus = (Status)status;
+                text.Status = textStatus;
+                text.StatusComment = statusComment;
+                await UpdateAsync(text);
+                return true;
+        }
+
     }
 }

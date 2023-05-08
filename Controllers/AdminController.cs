@@ -9,6 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authorization;
 using System.Data;
 using Bakalauras.Auth;
+using Bakalauras.Migrations;
 
 namespace Bakalauras.Controllers
 {
@@ -47,6 +48,16 @@ namespace Bakalauras.Controllers
             return users;
         }
 
+        [HttpGet]
+        [Route("isBlocked")]
+        [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
+        public async Task<ActionResult<bool>> IsUserBlocked()
+        {
+            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            var rez = await _AdminRepository.IsBlocked(user.Id);
+            return rez;
+        }
+
         [HttpPut]
         [Route("block")]
         [Authorize(Roles = BookieRoles.Admin)]
@@ -58,9 +69,9 @@ namespace Bakalauras.Controllers
                 return BadRequest("Vartotojas nerastas.");
 
             if (dto.isBlocked == 0)
-                user.isBlocked = true;
-            else if (dto.isBlocked == 1)
                 user.isBlocked = false;
+            else if (dto.isBlocked == 1)
+                user.isBlocked = true;
             else
                 return BadRequest("Duomenys netinkami.");
 
@@ -127,30 +138,43 @@ namespace Bakalauras.Controllers
             return NoContent();
         }
 
-        [HttpDelete]
-        [Route("book")]
+        [HttpGet]
+        [Route("submittedBooks")]
         [Authorize(Roles = BookieRoles.Admin)]
-        public async Task<ActionResult> RemoveBook(DeleteBookDto dto)
+        public async Task<IEnumerable<BookDtoBought>> GetManyBooksSubmitted()
         {
-            var book = await _BookRepository.GetAsync(dto.bookId);
-            if (book == null) return BadRequest("Knyga nerasta.");
-            await _BookRepository.DeleteAsync(book);
-
-            //204
-            return NoContent();
+            var books = await _BookRepository.GetManySubmitted();
+            return books;
         }
 
-        [HttpDelete]
-        [Route("text")]
+        [HttpGet]
+        [Route("submittedTexts")]
         [Authorize(Roles = BookieRoles.Admin)]
-        public async Task<ActionResult> RemoveText(DeleteTextDto dto)
+        public async Task<IEnumerable<TextDtoBought>> GetManyTextsSubmitted()
         {
-            var text = await _TextRepository.GetAsync(dto.textId);
-            if (text == null) return BadRequest("Tekstas nerastas.");
-            await _TextRepository.DeleteAsync(text);
-
-            //204
-            return NoContent();
+            var texts = await _TextRepository.GetSubmittedTextList();
+            return texts;
         }
+
+        [HttpPut]
+        [Route("submittedBooks")]
+        [Authorize(Roles = BookieRoles.Admin)]
+        public async Task<ActionResult<IEnumerable<BookDtoBought>>> SetBookStatus(UpdateBookStatus dto)
+        {
+            var rez = await _BookRepository.SetBookStatus(dto.status,dto.bookId,dto.statusComment);
+            if (!rez) return BadRequest("Knygos statuso pakeisti nepavyko");
+            return Ok();
+        }
+
+        [HttpPut]
+        [Route("submittedTexts")]
+        [Authorize(Roles = BookieRoles.Admin)]
+        public async Task<ActionResult<IEnumerable<TextDtoBought>>> SetTextStatus(UpdateTextStatus dto)
+        {
+            var rez = await _TextRepository.SetTextStatus(dto.status, dto.textId,dto.statusComment);
+            if (!rez) return BadRequest("Teksto statuso pakeisti nepavyko");
+            return Ok();
+        }
+
     }
 }

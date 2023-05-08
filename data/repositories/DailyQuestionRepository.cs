@@ -12,7 +12,6 @@ namespace Bakalauras.data.repositories
     {
         Task CreateAnswers(List<Answer> answers);
         Task<int> CreateQuestion(DailyQuestion question);
-        Task DeleteAsync(DailyQuestion question);
         Task<GetQuestionDto?> GetQuestionAsync(string date);
         Task<List<GetQuestionDto?>> GetManyQuestionsAsync();
 
@@ -23,6 +22,8 @@ namespace Bakalauras.data.repositories
         Task<Answer> GetCorrectAsnwer(DailyQuestion question);
         List<Answer> UpdateAnswers(List<Answer> answers, int questionId);
         Task<(bool, DateTime)> WhenWasQuestionAnswered(string userId);
+
+        Task<bool> DeleteQuestionAsync(int questionId);
     }
     public class DailyQuestionRepository : IDailyQuestionRepository
     {
@@ -113,12 +114,6 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(DailyQuestion question)
-        {
-            _BookieDBContext.DailyQuestions.Remove(question);
-            await _BookieDBContext.SaveChangesAsync();
-        }
-
         public async Task<(bool, object)> AnswerQuestion(int questionId, int answerId, string userId)
         {
             var question = await GetAsync(questionId);
@@ -196,5 +191,22 @@ namespace Bakalauras.data.repositories
             if (dqp != null) { return (true, dqp.DateAnswered); }
             return (false, new DateTime());
         }
+
+        public async Task<bool> DeleteQuestionAsync(int questionId)
+        {
+            var question = await GetAsync(questionId);
+            var answers = await _BookieDBContext.Answers.Where(x => x.QuestionId == questionId).ToListAsync();
+
+            if (question != null && answers.Count > 0)
+            {
+                _BookieDBContext.DailyQuestions.Remove(question);
+                _BookieDBContext.Answers.RemoveRange(answers);
+                await _BookieDBContext.SaveChangesAsync();
+                return true;
+            }
+            else return false;
+            
+        }
+
     }
 }
