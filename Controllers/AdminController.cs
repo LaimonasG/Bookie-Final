@@ -1,21 +1,19 @@
-﻿using Bakalauras.Auth.Model;
-using Bakalauras.data.repositories;
+﻿using Bakalauras.Auth;
+using Bakalauras.Auth.Model;
 using Bakalauras.data;
+using Bakalauras.data.dtos;
+using Bakalauras.data.repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Bakalauras.data.dtos;
-using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Authorization;
-using System.Data;
-using Bakalauras.Auth;
-using Bakalauras.Migrations;
+using System.Security.Claims;
 
 namespace Bakalauras.Controllers
 {
     [ApiController]
     [Route("api/admin")]
-    public class AdminController:ControllerBase
+    public class AdminController : ControllerBase
     {
         private readonly IAdminRepository _AdminRepository;
         private readonly UserManager<BookieUser> _UserManager;
@@ -25,7 +23,7 @@ namespace Bakalauras.Controllers
         private readonly ICommentRepository _CommentRepository;
         private readonly IBookRepository _BookRepository;
         private readonly ITextRepository _TextRepository;
-        public AdminController(UserManager<BookieUser> mng,IAdminRepository adrep, RoleManager<IdentityRole> roleManager,
+        public AdminController(UserManager<BookieUser> mng, IAdminRepository adrep, RoleManager<IdentityRole> roleManager,
             IProfileRepository repp, BookieDBContext dbc, ICommentRepository commentRepository, IBookRepository bookRepository,
             ITextRepository textRepository)
         {
@@ -36,7 +34,7 @@ namespace Bakalauras.Controllers
             _BookieDBContext = dbc;
             _CommentRepository = commentRepository;
             _BookRepository = bookRepository;
-            _TextRepository= textRepository;
+            _TextRepository = textRepository;
         }
 
         [HttpGet]
@@ -47,7 +45,7 @@ namespace Bakalauras.Controllers
             var users = await _AdminRepository.GetUserList();
             return users;
         }
-
+        
         [HttpGet]
         [Route("isBlocked")]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
@@ -77,7 +75,7 @@ namespace Bakalauras.Controllers
 
             await _UserManager.UpdateAsync(user);
 
-            return Ok(new UserBlockedDto(user.Id, user.UserName, user.isBlocked ? 1 :0));
+            return Ok(new UserBlockedDto(user.Id, user.UserName, user.isBlocked ? 1 : 0));
         }
 
         [HttpPut]
@@ -91,6 +89,12 @@ namespace Bakalauras.Controllers
                 return BadRequest("Vartotojas nerastas.");
 
             var profile = await _ProfileRepository.GetAsync(user.Id);
+
+            if (profile==null)
+            {
+                return BadRequest();
+            }
+
             profile.Points = dto.points;
 
             _BookieDBContext.Profiles.Update(profile);
@@ -158,10 +162,10 @@ namespace Bakalauras.Controllers
 
         [HttpPut]
         [Route("submittedBooks")]
-        [Authorize(Roles = BookieRoles.Admin)]
+        [Authorize(Roles = $"{BookieRoles.BookieWriter},{BookieRoles.Admin}")]
         public async Task<ActionResult<IEnumerable<BookDtoBought>>> SetBookStatus(UpdateBookStatus dto)
         {
-            var rez = await _BookRepository.SetBookStatus(dto.status,dto.bookId,dto.statusComment);
+            var rez = await _BookRepository.SetBookStatus(dto.status, dto.bookId, dto.statusComment);
             if (!rez) return BadRequest("Knygos statuso pakeisti nepavyko");
             return Ok();
         }
@@ -171,10 +175,9 @@ namespace Bakalauras.Controllers
         [Authorize(Roles = BookieRoles.Admin)]
         public async Task<ActionResult<IEnumerable<TextDtoBought>>> SetTextStatus(UpdateTextStatus dto)
         {
-            var rez = await _TextRepository.SetTextStatus(dto.status, dto.textId,dto.statusComment);
+            var rez = await _TextRepository.SetTextStatus(dto.status, dto.textId, dto.statusComment);
             if (!rez) return BadRequest("Teksto statuso pakeisti nepavyko");
             return Ok();
         }
-
     }
 }

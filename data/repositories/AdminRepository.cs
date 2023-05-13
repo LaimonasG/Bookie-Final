@@ -1,7 +1,5 @@
-﻿using Bakalauras.Auth;
-using Bakalauras.Auth.Model;
+﻿using Bakalauras.Auth.Model;
 using Bakalauras.data.dtos;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bakalauras.data.repositories
@@ -15,7 +13,7 @@ namespace Bakalauras.data.repositories
     {
         private readonly BookieDBContext _BookieDBContext;
         private readonly IProfileRepository _ProfileRepository;
-        public AdminRepository(BookieDBContext context,IProfileRepository repo)
+        public AdminRepository(BookieDBContext context, IProfileRepository repo)
         {
             _BookieDBContext = context;
             _ProfileRepository = repo;
@@ -28,7 +26,7 @@ namespace Bakalauras.data.repositories
                             .Select(r => r.Id)
                             .FirstOrDefaultAsync();
 
-            List<BookieUser>users=new List<BookieUser>();
+            List<BookieUser> users;
             if (adminRoleId != null)
             {
                 var userIds = await _BookieDBContext.UserRoles.Where(x => x.RoleId == adminRoleId).Select(x => x.UserId)
@@ -38,13 +36,13 @@ namespace Bakalauras.data.repositories
             else
             {
                 users = await _BookieDBContext.Users.ToListAsync();
-            }  
+            }
 
             List<UserAdminPageDto> rez = new List<UserAdminPageDto>();
             foreach (var user in users)
             {
                 var profile = await _ProfileRepository.GetAsync(user.Id);
-                UserAdminPageDto temp = new UserAdminPageDto(user.Id,user.UserName,user.Email,user.isBlocked ? 1:0,profile.Points);
+                UserAdminPageDto temp = new UserAdminPageDto(user.Id, user.UserName, user.Email, user.isBlocked ? 1 : 0, profile.Points);
                 rez.Add(temp);
             }
             return rez;

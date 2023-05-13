@@ -1,14 +1,14 @@
-﻿using Bakalauras.Auth.Model;
-using Bakalauras.Auth;
+﻿using Bakalauras.Auth;
+using Bakalauras.Auth.Model;
 using Bakalauras.data.dtos;
 using Bakalauras.data.entities;
 using Bakalauras.data.repositories;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Identity;
 
 namespace Bakalauras.Controllers
 {
@@ -25,14 +25,14 @@ namespace Bakalauras.Controllers
         private readonly IBookRepository _BookRepository;
 
         public TextController(ITextRepository repo, IAuthorizationService authServise, UserManager<BookieUser> mng,
-            IProfileRepository pre, IChaptersRepository chrep,IConfiguration conf,IBookRepository repob)
+            IProfileRepository pre, IChaptersRepository chrep, IConfiguration conf, IBookRepository repob)
         {
             _Textrepostory = repo;
             _AuthorizationService = authServise;
             _ProfileRepository = pre;
             _UserManager = mng;
             _ChaptersRepository = chrep;
-            _configuration= conf;
+            _configuration = conf;
             _BookRepository = repob;
         }
 
@@ -40,7 +40,7 @@ namespace Bakalauras.Controllers
         public async Task<IEnumerable<TextDtoToBuy>> GetMany(string GenreName)
         {
             var texts = await _Textrepostory.GetManyAsync(GenreName);
-            return texts.Select(x => new TextDtoToBuy(x.Id, x.Name, x.GenreName,x.Description, x.Price,x.CoverImageUrl,
+            return texts.Select(x => new TextDtoToBuy(x.Id, x.Name, x.GenreName, x.Description, x.Price, x.CoverImageUrl,
                 x.Author, x.Created, x.UserId)).Where(y => y.GenreName == GenreName);
         }
 
@@ -60,8 +60,8 @@ namespace Bakalauras.Controllers
                 else
                     return BadRequest("Tekstas buvo atmestas.");
             }
-  
-            return new TextDtoToBuy(text.Id, text.Name, text.GenreName,text.Description, text.Price,text.CoverImageUrl,
+
+            return new TextDtoToBuy(text.Id, text.Name, text.GenreName, text.Description, text.Price, text.CoverImageUrl,
                 text.Author, text.Created, text.UserId);
         }
 
@@ -77,13 +77,24 @@ namespace Bakalauras.Controllers
             if (content == "error")
             {
                 return BadRequest("Failo formatas netinkamas, galima įkelti tik PDF tipo failus.");
-            } else if (content.Length > 100000)
+            }
+            else if (content.Length > 100000)
             {
                 return BadRequest("Failo simbolių kiekis viršytas.");
             }
-            
-            Text text = new Text { Name = dto.Name, GenreName=genreName, Content = content,Price=double.Parse(dto.Price),
-                UserId = user.Id,Author=author,Description=dto.Description,Created=DateTime.Now,Status=Status.Pateikta};
+
+            Text text = new Text
+            {
+                Name = dto.Name,
+                GenreName = genreName,
+                Content = content,
+                Price = double.Parse(dto.Price),
+                UserId = user.Id,
+                Author = author,
+                Description = dto.Description,
+                Created = DateTime.Now,
+                Status = Status.Pateikta
+            };
 
             if (dto.CoverImage != null)
             {
@@ -97,9 +108,9 @@ namespace Bakalauras.Controllers
             }
 
 
-            await _Textrepostory.CreateAsync(text,genreName);
+            await _Textrepostory.CreateAsync(text, genreName);
 
-            return new TextDto(text.Name, text.GenreName, text.Content,text.Description,text.Price,text.CoverImageUrl,
+            return new TextDto(text.Name, text.GenreName, text.Content, text.Description, text.Price, text.CoverImageUrl,
                 text.Created);
         }
 
@@ -116,8 +127,8 @@ namespace Bakalauras.Controllers
                 return Forbid();
             }
 
-            text.Name = dto.Name; 
-            text.Content = _ChaptersRepository.ExtractTextFromPDf(dto.File); 
+            text.Name = dto.Name;
+            text.Content = _ChaptersRepository.ExtractTextFromPDf(dto.File);
             text.Price = double.Parse(dto.Price);
             text.Created = DateTime.Now;
             text.Status = Status.Pateikta;
@@ -147,7 +158,7 @@ namespace Bakalauras.Controllers
         public async Task<ActionResult> PurchaseText(int textId)
         {
             var text = await _Textrepostory.GetAsync(textId);
-            if(text== null) return NotFound();
+            if (text == null) return NotFound();
 
             if (text.Status == Status.Pateikta) return BadRequest("Tekstas dar nebuvo patvirtintas");
             if (text.Status == Status.Atmesta)
@@ -170,25 +181,24 @@ namespace Bakalauras.Controllers
             {
                 return BadRequest("Jūs esate teksto autorius.");
             }
-            else
-            if (await _Textrepostory.WasTextBought(text))
+            else if (await _Textrepostory.WasTextBought(text))
             {
                 return BadRequest("Naudotojas jau nusipirkęs šį tekstą.");
             }
-            else
-            if (profile.Points < text.Price)
+            else if (profile.Points < text.Price)
             {
                 return BadRequest("Pirkiniui nepakanka taškų.");
             }
-                profile.Points -= text.Price;
-                authorProfile.Points += text.Price;
-            
+            profile.Points -= text.Price;
+            authorProfile.Points += text.Price;
+
             prte.BoughtDate = DateTime.Now;
 
             await _ProfileRepository.UpdateAsync(profile);
             await _ProfileRepository.UpdateAsync(authorProfile);
             await _Textrepostory.CreateProfileTextAsync(prte);
 
+            //200
             return Ok();
         }
     }

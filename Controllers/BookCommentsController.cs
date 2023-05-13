@@ -1,15 +1,14 @@
-﻿using Bakalauras.Auth.Model;
-using Bakalauras.Auth;
+﻿using Bakalauras.Auth;
+using Bakalauras.Auth.Model;
 using Bakalauras.data.dtos;
+using Bakalauras.data.entities;
 using Bakalauras.data.repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
-using System.Security.Policy;
-using Bakalauras.data.entities;
-using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace Bakalauras.Controllers
 {
@@ -31,7 +30,7 @@ namespace Bakalauras.Controllers
         [HttpGet]
         public async Task<IEnumerable<CommentDto>> GetMany(int bookId)
         {
-            var comments = await _CommentRepository.GetManyAsync(bookId,_Type);
+            var comments = await _CommentRepository.GetManyAsync(bookId, _Type);
             return comments.Select(x => new CommentDto(x.Id, x.EntityId, _Type, DateTime.Now, x.Content, x.UserId, x.Username));
         }
 
@@ -39,9 +38,9 @@ namespace Bakalauras.Controllers
         [Route("{commentId}")]
         public async Task<ActionResult<CommentDto>> Get(int bookId, int commentId)
         {
-            var comment = await _CommentRepository.GetAsync(commentId, bookId,_Type);
+            var comment = await _CommentRepository.GetAsync(commentId, bookId, _Type);
             if (comment == null) return NotFound();
-            return new CommentDto(comment.Id, comment.EntityId,_Type, DateTime.Now, comment.Content,
+            return new CommentDto(comment.Id, comment.EntityId, _Type, DateTime.Now, comment.Content,
                 comment.UserId, comment.Username);
         }
 
@@ -57,7 +56,7 @@ namespace Bakalauras.Controllers
 
             var comment = new Comment
             {
-                EntityType=_Type,
+                EntityType = _Type,
                 Content = createCommentDto.Content,
                 Date = DateTime.Now,
                 Username = user.UserName,
@@ -65,10 +64,10 @@ namespace Bakalauras.Controllers
             };
 
 
-            await _CommentRepository.CreateAsync(comment, bookId,_Type);
+            await _CommentRepository.CreateAsync(comment, bookId, _Type);
 
             //201
-            return Created("201", new CommentDto(comment.Id, comment.EntityId,_Type, comment.Date, comment.Content,
+            return Created("201", new CommentDto(comment.Id, comment.EntityId, _Type, comment.Date, comment.Content,
                 comment.UserId, comment.Username));
         }
 
@@ -77,7 +76,7 @@ namespace Bakalauras.Controllers
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
         public async Task<ActionResult<CommentDto>> Update(int commentId, int bookId, UpdateCommentDto updateCommentDto)
         {
-            var comment = await _CommentRepository.GetAsync(commentId, bookId,_Type);
+            var comment = await _CommentRepository.GetAsync(commentId, bookId, _Type);
             if (comment == null) return NotFound();
             var authRez = await _AuthorizationService.AuthorizeAsync(User, comment, PolicyNames.ResourceOwner);
             if (!authRez.Succeeded)
@@ -88,7 +87,7 @@ namespace Bakalauras.Controllers
             await _CommentRepository.UpdateAsync(comment);
 
 
-            return Ok(new CommentDto(comment.Id, comment.EntityId,_Type, DateTime.Now, comment.Content, comment.UserId, comment.Username));
+            return Ok(new CommentDto(comment.Id, comment.EntityId, _Type, DateTime.Now, comment.Content, comment.UserId, comment.Username));
         }
     }
 }

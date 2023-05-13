@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Bakalauras.data.entities
 {
-    public class Chapter: IUserOwnedResource
+    public class Chapter : IUserOwnedResource
     {
         public int Id { get; set; }
         [Required]

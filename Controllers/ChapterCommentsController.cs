@@ -1,14 +1,13 @@
 ﻿using Bakalauras.Auth.Model;
-using Bakalauras.Auth;
 using Bakalauras.data.dtos;
+using Bakalauras.data.entities;
 using Bakalauras.data.repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
-using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
-using Bakalauras.data.entities;
+using System.Security.Claims;
 
 namespace Bakalauras.Controllers
 {
@@ -18,14 +17,12 @@ namespace Bakalauras.Controllers
     {
         private readonly ICommentRepository _CommentRepository;
         private readonly UserManager<BookieUser> _UserManager;
-        private readonly IAuthorizationService _AuthorizationService;
         private readonly IChaptersRepository _ChaptersRepository;
         private const string _Type = "Chapter";
-        public ChapterCommentsController(ICommentRepository repo, IAuthorizationService authService,
-            UserManager<BookieUser> userManager,IChaptersRepository chaptersRepository)
+        public ChapterCommentsController(ICommentRepository repo,
+            UserManager<BookieUser> userManager, IChaptersRepository chaptersRepository)
         {
             _CommentRepository = repo;
-            _AuthorizationService = authService;
             _UserManager = userManager;
             _ChaptersRepository = chaptersRepository;
         }
@@ -48,7 +45,7 @@ namespace Bakalauras.Controllers
 
         [HttpPost]
         [Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<CommentDto>> Create(CreateCommentDto createCommentDto, int chapterId,int bookId)
+        public async Task<ActionResult<CommentDto>> Create(CreateCommentDto createCommentDto, int chapterId, int bookId)
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             if (user.isBlocked)
@@ -72,23 +69,5 @@ namespace Bakalauras.Controllers
             return Created("201", new CommentDto(comment.Id, comment.EntityId, _Type, comment.Date, comment.Content,
                 comment.UserId, comment.Username));
         }
-
-        //[HttpPut]
-        //[Route("{commentId}")]
-        //[Authorize(Roles = BookieRoles.BookieUser + "," + BookieRoles.Admin)]
-        //public async Task<ActionResult<CommentDto>> Update(int commentId, int chapterId, UpdateCommentDto updateCommentDto)
-        //{
-        //    var comment = await _CommentRepository.GetAsync(commentId, chapterId, _Type);
-        //    if (comment == null) return NotFound();
-        //    var authRez = await _AuthorizationService.AuthorizeAsync(User, comment, PolicyNames.ResourceOwner);
-        //    if (!authRez.Succeeded)
-        //    {
-        //        return Forbid();
-        //    }
-        //    comment.Content = updateCommentDto.Content;
-        //    await _CommentRepository.UpdateAsync(comment);
-
-        //    return Ok(new CommentDto(comment.Id, comment.EntityId, _Type, DateTime.Now, comment.Content, comment.UserId, comment.Username));
-        //}
     }
 }

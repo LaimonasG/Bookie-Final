@@ -1,13 +1,13 @@
-﻿using Bakalauras.data;
-using Microsoft.AspNetCore.Identity;
-using Bakalauras.Auth;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Microsoft.AspNetCore.Authorization;
-using System.IdentityModel.Tokens.Jwt;
+﻿using Bakalauras.Auth;
 using Bakalauras.Auth.Model;
+using Bakalauras.data;
 using Bakalauras.data.repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 

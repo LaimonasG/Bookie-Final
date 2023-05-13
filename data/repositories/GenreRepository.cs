@@ -1,6 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Bakalauras.data.entities;
-using Bakalauras.data;
+﻿using Bakalauras.data.entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Bakalauras.data.repositories
 {
@@ -10,53 +9,44 @@ namespace Bakalauras.data.repositories
         Task DeleteAsync(Genre genre);
         Task<Genre?> GetAsync(int genreId);
         Task<IReadOnlyList<Genre>> GetManyAsync();
-       // Task<PagedList<Genre>> GetManyAsync(GenresSearchParameters parameters);
         Task UpdateAsync(Genre genre);
     }
 
     public class GenreRepository : IGenreRepository
     {
-        private readonly BookieDBContext bookieDBContext;
+        private readonly BookieDBContext _BookieDBContext;
         public GenreRepository(BookieDBContext context)
         {
-            bookieDBContext = context;
+            _BookieDBContext = context;
         }
 
         public async Task<Genre?> GetAsync(int genreId)
         {
-            return await bookieDBContext.Genres.FirstOrDefaultAsync(x => x.Id == genreId);
+            return await _BookieDBContext.Genres.FirstOrDefaultAsync(x => x.Id == genreId);
         }
 
         public async Task<IReadOnlyList<Genre>> GetManyAsync()
         {
-            return await bookieDBContext.Genres.ToListAsync();
+            return await _BookieDBContext.Genres.ToListAsync();
         }
-
-        //public async Task<PagedList<Genre>> GetManyAsync(GenresSearchParameters parameters)
-        //{
-        //    var queryable = bookieDBContext.Genres.AsQueryable().OrderBy(o => o.Name);
-
-        //    return await PagedList<Genre>.CreateAsync(queryable, parameters.pageNumber,
-        //        parameters.PageSize);
-        //}
 
         public async Task CreateAsync(Genre genre)
         {
-            bookieDBContext.Genres.Add(genre);
+            _BookieDBContext.Genres.Add(genre);
 
-            await bookieDBContext.SaveChangesAsync();
+            await _BookieDBContext.SaveChangesAsync();
         }
 
         public async Task UpdateAsync(Genre genre)
         {
-            bookieDBContext.Genres.Update(genre);
-            await bookieDBContext.SaveChangesAsync();
+            _BookieDBContext.Genres.Update(genre);
+            await _BookieDBContext.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(Genre genre)
         {
-            bookieDBContext.Genres.Remove(genre);
-            await bookieDBContext.SaveChangesAsync();
+            _BookieDBContext.Genres.Remove(genre);
+            await _BookieDBContext.SaveChangesAsync();
         }
     }
 }

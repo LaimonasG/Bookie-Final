@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "K1nXIdHY6/mp/ubhaRHo+Np+LR6b9q756aVG7J9gELyvCW8mE0pLYCdko/0KqEIiBTgMnNRBFlM3gU659nRBTg==",
+  "dgSpecHash": "PYTCmiZrn943Dm0OxLm+GDBlNUrZMNe/eklA4etV92o2XoTUVc3+8R/8GNsGxiT16CQNOM6kQA060oMJ6+ifuQ==",
   "success": true,
   "projectFilePath": "D:\\laimi\\Bakalauras\\BookieAPI\\Bakalauras.csproj",
   "expectedPackageFiles": [
@@ -133,6 +133,7 @@
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\runtime.ubuntu.14.04-x64.runtime.native.system.security.cryptography.openssl\\4.3.0\\runtime.ubuntu.14.04-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\runtime.ubuntu.16.04-x64.runtime.native.system.security.cryptography.openssl\\4.3.0\\runtime.ubuntu.16.04-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\runtime.ubuntu.16.10-x64.runtime.native.system.security.cryptography.openssl\\4.3.0\\runtime.ubuntu.16.10-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
+    "C:\\Users\\laimi\\.nuget\\packages\\sonaranalyzer.csharp\\9.0.0.68202\\sonaranalyzer.csharp.9.0.0.68202.nupkg.sha512",
     "C:\\Users\\laimi\\.nuget\\packages\\swashbuckle.aspnetcore\\6.4.0\\swashbuckle.aspnetcore.6.4.0.nupkg.sha512",
     "C:\\Users\\laimi\\.nuget\\packages\\swashbuckle.aspnetcore.swagger\\6.4.0\\swashbuckle.aspnetcore.swagger.6.4.0.nupkg.sha512",
     "C:\\Users\\laimi\\.nuget\\packages\\swashbuckle.aspnetcore.swaggergen\\6.4.0\\swashbuckle.aspnetcore.swaggergen.6.4.0.nupkg.sha512",

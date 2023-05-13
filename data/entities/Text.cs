@@ -1,13 +1,13 @@
-﻿using Newtonsoft.Json;
-using System.ComponentModel.DataAnnotations;
+﻿using Bakalauras.Auth;
 using Bakalauras.Auth.Model;
-using Bakalauras.Auth;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Bakalauras.data.entities
 {
-    public class Text: IUserOwnedResource
+    public class Text : IUserOwnedResource
     {
         public int Id { get; set; }
         public string GenreName { get; set; }
@@ -20,10 +20,10 @@ namespace Bakalauras.data.entities
 
         [Column(TypeName = "text")]
         public string Content { get; set; }
-        public string? Description { get; set; }
-        public string? Author { get; set; }
+        public string Description { get; set; }
+        public string Author { get; set; }
 
-        public string? CoverImageUrl { get; set; }
+        public string CoverImageUrl { get; set; }
 
         public virtual ICollection<Comment>? Comments { get; set; }
 

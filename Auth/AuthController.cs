@@ -1,11 +1,10 @@
-﻿using Bakalauras.Auth.Model;
-using Bakalauras.Auth;
+﻿using Bakalauras.Auth;
+using Bakalauras.Auth.Model;
+using Bakalauras.data.entities;
+using Bakalauras.data.repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Bakalauras.data.repositories;
-using Bakalauras.data;
-using Bakalauras.data.entities;
 
 namespace Bakalauras.Controllers
 {
@@ -18,7 +17,7 @@ namespace Bakalauras.Controllers
         private readonly Bakalauras.Auth.IJwtTokenService _JwtTokenService;
         private readonly IProfileRepository _ProfileRepo;
 
-        public AuthController(UserManager<BookieUser> userManager, IJwtTokenService jwtTokenService,IProfileRepository repo)
+        public AuthController(UserManager<BookieUser> userManager, IJwtTokenService jwtTokenService, IProfileRepository repo)
         {
             _UserManager = userManager;
             _JwtTokenService = jwtTokenService;
@@ -49,7 +48,7 @@ namespace Bakalauras.Controllers
             {
                 UserId = newUser.Id,
                 Points = 0,
-                User=newUser
+                User = newUser
             };
 
             await _ProfileRepo.CreateAsync(profile);
@@ -74,7 +73,7 @@ namespace Bakalauras.Controllers
 
             // valid user
             var roles = await _UserManager.GetRolesAsync(user);
-            var accessToken =  _JwtTokenService.CreateAccessToken(user.UserName,user.Id,roles);
+            var accessToken = _JwtTokenService.CreateAccessToken(user.UserName, user.Id, roles);
 
             return Ok(new SuccessfulLoginDto(accessToken));
         }

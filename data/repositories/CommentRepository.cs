@@ -1,18 +1,14 @@
 ﻿using Bakalauras.data.entities;
 using Microsoft.EntityFrameworkCore;
-using Bakalauras.data.dtos;
-using System.Net;
-using Microsoft.AspNetCore.Mvc;
-using static iText.IO.Util.IntHashtable;
 
 namespace Bakalauras.data.repositories
 {
-    
+
     public interface ICommentRepository
     {
-        Task CreateAsync(Comment cm,int EntityId, string EntityType);
+        Task CreateAsync(Comment cm, int EntityId, string EntityType);
         Task DeleteAsync(Comment cm);
-        Task<Comment?> GetAsync(int cmId,int EntityId, string EntityType);
+        Task<Comment?> GetAsync(int cmId, int EntityId, string EntityType);
         Task<IReadOnlyList<Comment>> GetManyAsync(int EntityId, string EntityType);
         Task UpdateAsync(Comment cm);
     }
@@ -20,7 +16,6 @@ namespace Bakalauras.data.repositories
     public class CommentRepository : ICommentRepository
     {
         private readonly BookieDBContext _BookieDBContext;
-        private readonly IBookRepository _BookRepository;
         public CommentRepository(BookieDBContext context)
         {
             _BookieDBContext = context;
@@ -43,24 +38,26 @@ namespace Bakalauras.data.repositories
             Text? text;
             Chapter? chapter;
 
-            if (EntityType == "Book") {
+            if (EntityType == "Book")
+            {
                 book = _BookieDBContext.Books.FirstOrDefault(x => x.Id == EntityId);
                 if (book != null)
                 {
                     cm.EntityId = EntityId;
                     _BookieDBContext.Comments.Add(cm);
                 }
-                
+
                 await _BookieDBContext.SaveChangesAsync();
             }
-            else if (EntityType == "Text") {
+            else if (EntityType == "Text")
+            {
                 text = _BookieDBContext.Texts.FirstOrDefault(x => x.Id == EntityId);
                 if (text != null)
                 {
                     cm.EntityId = EntityId;
                     _BookieDBContext.Comments.Add(cm);
                 }
-                
+
                 await _BookieDBContext.SaveChangesAsync();
             }
             else if (EntityType == "Chapter")
@@ -70,7 +67,7 @@ namespace Bakalauras.data.repositories
                 {
                     cm.EntityId = EntityId;
                     _BookieDBContext.Comments.Add(cm);
-                } 
+                }
                 await _BookieDBContext.SaveChangesAsync();
             }
         }

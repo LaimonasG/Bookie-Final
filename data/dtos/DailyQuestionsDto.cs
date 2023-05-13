@@ -1,9 +1,8 @@
 ﻿using Bakalauras.data.entities;
-using System.ComponentModel.DataAnnotations;
 
 namespace Bakalauras.data.dtos
 {
-    public record  CreateQuestionDto(string Question, double Points,DateTime DateToRelease, List<Answer> Answers);
+    public record CreateQuestionDto(string Question, double Points, DateTime DateToRelease, List<Answer> Answers);
     public record GetQuestionDto(int Id, string Question, double Points, DateTime DateToRelease, List<Answer> Answers);
     public record DailyQuestionDto(string Question, double points, List<Answer> answers);
     public record AnswerDto(string content, int correct);

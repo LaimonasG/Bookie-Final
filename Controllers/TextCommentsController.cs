@@ -1,14 +1,14 @@
-﻿using Bakalauras.Auth.Model;
-using Bakalauras.Auth;
+﻿using Bakalauras.Auth;
+using Bakalauras.Auth.Model;
 using Bakalauras.data.dtos;
+using Bakalauras.data.entities;
 using Bakalauras.data.repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
-using System.Security.Claims;
-using Bakalauras.data.entities;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace Bakalauras.Controllers
 {
@@ -35,7 +35,7 @@ namespace Bakalauras.Controllers
         {
             var comments = await _CommentRepository.GetManyAsync(textId, _Type);
 
-            if(comments.Count== 0)
+            if (comments.Count == 0)
             {
                 return new List<CommentDto>();
             }
@@ -96,7 +96,7 @@ namespace Bakalauras.Controllers
             comment.Content = updateCommentDto.Content;
             await _CommentRepository.UpdateAsync(comment);
 
-
+            //200
             return Ok(new CommentDto(comment.Id, comment.EntityId, _Type, DateTime.Now, comment.Content, comment.UserId, comment.Username));
         }
 
@@ -104,7 +104,6 @@ namespace Bakalauras.Controllers
         [Route("{commentId}")]
         public async Task<ActionResult> Remove(int commentId, int textId)
         {
-            var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var comment = await _CommentRepository.GetAsync(commentId, textId, _Type);
             if (comment == null) return NotFound();
             var authRez = await _AuthorizationService.AuthorizeAsync(User, comment, PolicyNames.ResourceOwner);
@@ -112,7 +111,7 @@ namespace Bakalauras.Controllers
             if (!authRez.Succeeded)
             {
                 return Forbid();
-            }            
+            }
             await _CommentRepository.DeleteAsync(comment);
 
             //204

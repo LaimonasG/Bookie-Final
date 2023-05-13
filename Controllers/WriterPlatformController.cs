@@ -1,18 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Bakalauras.Auth.Model;
-using Bakalauras.Auth;
+﻿using Bakalauras.Auth.Model;
 using Bakalauras.data.dtos;
 using Bakalauras.data.entities;
 using Bakalauras.data.repositories;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System.Data;
 using Microsoft.AspNetCore.Identity;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
-using System.Net;
-using System.Collections.Generic;
-using System.Text;
+using System.Security.Claims;
 
 namespace Bakalauras.Controllers
 {
@@ -64,7 +58,7 @@ namespace Bakalauras.Controllers
 
             if (response.WithrawalTooSmall)
             {
-                return BadRequest(string.Format("Išgryninimo suma (%1 Eur) per maža.", response.EurAmount));
+                return BadRequest($"Išgryninimo suma ({response.EurAmount} Eur) per maža.");
             }
 
             if (!response.Confirmed)
@@ -84,7 +78,7 @@ namespace Bakalauras.Controllers
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             var texts = await _TextRepository.GetUserTextsAsync(user.Id);
 
-            return Ok(await _TextRepository.ConvertTextsTotextDtoBoughtList(texts));
+            return Ok(_TextRepository.ConvertTextsTotextDtoBoughtList(texts));
         }
 
         [HttpGet]
@@ -96,8 +90,8 @@ namespace Bakalauras.Controllers
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
             bool hasText = await _TextRepository.CheckIfUserHasText(user.Id, textId);
             if (!hasText) return BadRequest("Naudotojas neturi prieigos prie šio teksto.");
-            return new TextDtoBought(text.Id, text.Name, text.GenreName, text.Content,text.Description, text.Price,
-                text.CoverImageUrl, text.Author, text.Created, text.UserId,text.Status,text.StatusComment);
+            return new TextDtoBought(text.Id, text.Name, text.GenreName, text.Content, text.Description, text.Price,
+                text.CoverImageUrl, text.Author, text.Created, text.UserId, text.Status, text.StatusComment);
         }
 
         [HttpGet]
@@ -123,8 +117,8 @@ namespace Bakalauras.Controllers
 
             var chapters = await _ChaptersRepository.GetManyAsync(bookId);
             return new BookDtoBought(book.Id, book.Name, (ICollection<Chapter>?)chapters, book.GenreName, book.Description,
-                book.ChapterPrice,book.BookPrice, book.Created, book.UserId, await _BookRepository.GetAuthorInfo(book.Id),
-                book.CoverImagePath, book.IsFinished,book.Status,book.StatusComment);
+                book.ChapterPrice, book.BookPrice, book.Created, book.UserId, await _BookRepository.GetAuthorInfo(book.Id),
+                book.CoverImagePath, book.IsFinished, book.Status, book.StatusComment);
         }
     }
 }

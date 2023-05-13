@@ -6,5 +6,5 @@
         int CurrSubscribedAmount);
     public record TextSalesData(string TextName, double TextPrice, int SalesAmount, List<DateTime?> BoughtDate);
 
-    public record WriterPaymentConfirmation(bool Confirmed,bool WithrawalTooSmall, double PointAmount,double EurAmount);
+    public record WriterPaymentConfirmation(bool Confirmed, bool WithrawalTooSmall, double PointAmount, double EurAmount);
 }

@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
+﻿using Bakalauras.Auth.Model;
 using Bakalauras.data.dtos;
 using Bakalauras.data.entities;
-using Bakalauras.Auth.Model;
 using Bakalauras.data.repositories;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Bakalauras.Controllers
 {
@@ -23,7 +23,7 @@ namespace Bakalauras.Controllers
             Console.WriteLine("test before");
             var genres = await genreRepository.GetManyAsync();
             Console.WriteLine("test after");
-            return genres.Select(x => new GenreDto(x.Id,x.Name));
+            return genres.Select(x => new GenreDto(x.Id, x.Name));
         }
 
         [HttpGet]
@@ -55,7 +55,7 @@ namespace Bakalauras.Controllers
             var genre = await genreRepository.GetAsync(genreId);
             if (genre == null) return NotFound();
             genre.Name = updateGenreDto.name;
-            await genreRepository.UpdateAsync(genre);         
+            await genreRepository.UpdateAsync(genre);
 
             return Ok(new GenreDto(genre.Id, genre.Name));
         }

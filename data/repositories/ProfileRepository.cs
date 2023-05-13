@@ -1,36 +1,25 @@
 ﻿using Bakalauras.Auth.Model;
 using Bakalauras.data.dtos;
 using Bakalauras.data.entities;
-using Bakalauras.Migrations;
-using iText.Commons.Actions.Contexts;
-using iText.Layout.Element;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Org.BouncyCastle.Bcpg;
-using PagedList;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
-using static System.Reflection.Metadata.BlobBuilder;
+using System.Linq;
 
 namespace Bakalauras.data.repositories
 {
     public interface IProfileRepository
     {
         Task CreateAsync(Profile profile);
-        Task DeleteAsync(Profile profile);
         Task<Profile?> GetAsync(string userId);
-        Task<IReadOnlyList<Profile>> GetManyAsync();
         Task UpdateAsync(Profile profile);
-        Task<string> UpdatePersonalInfoAsync(PersonalInfoDto dto, BookieUser user,Profile profile);
+        Task<string> UpdatePersonalInfoAsync(PersonalInfoDto dto, BookieUser user, Profile profile);
 
         Task RemoveProfileBookAsync(ProfileBook prbo);
 
         Task<List<ProfileBook>> GetProfileBooks(Profile profile);
 
-        Task<ProfileBook> GetProfileBookRecord(int bookId,int profileId,bool isSubscribed);
+        Task<ProfileBook> GetProfileBookRecord(int bookId, int profileId, bool isSubscribed);
 
         Task UpdateProfileBookRecord(ProfileBook pb);
 
@@ -40,23 +29,21 @@ namespace Bakalauras.data.repositories
 
         List<int> ConvertStringToIds(string data);
 
-
         bool WasBookSubscribed(ProfileBook prbo);
 
-        bool HasEnoughPoints(double userPoints,double costpoints);
+        bool HasEnoughPoints(double userPoints, double costpoints);
 
         Task PayForPoints(Profile userWallet, Payment payment);
 
         Task<Payment> GetPayment(int paymentId);
 
-        Task<List<BookDtoBought>> GetBookList(List<ProfileBook> prbo);
+        List<BookDtoBought> GetBookList(List<ProfileBook> prbo);
 
         Task<List<PaymentDto>> GetAvailablePayments();
 
         Task<PaymentDto> CreateAvailablePayment(PaymentCreateDto dto);
 
         Task<List<Profile>> GetBookSubscribers(int bookId);
-
     }
     public class ProfileRepository : IProfileRepository
     {
@@ -163,12 +150,12 @@ namespace Bakalauras.data.repositories
 
         public async Task<List<ProfileBook>> GetProfileBooks(Profile profile)
         {
-            var books=await _BookieDBContext.Books.Where(x=>x.Status==Status.Patvirtinta).ToListAsync();
-            var bookIds=books.Select(x=>x.Id).ToList();
-            return await _BookieDBContext.ProfileBooks.Where(x=>x.ProfileId==profile.Id && bookIds.Contains(x.BookId)).ToListAsync();
+            var books = await _BookieDBContext.Books.Where(x => x.Status == Status.Patvirtinta).ToListAsync();
+            var bookIds = books.Select(x => x.Id).ToList();
+            return await _BookieDBContext.ProfileBooks.Where(x => x.ProfileId == profile.Id && bookIds.Contains(x.BookId)).ToListAsync();
         }
 
-        public async Task<ProfileBook> GetProfileBookRecord(int bookId, int profileId,bool isSubscribed)
+        public async Task<ProfileBook> GetProfileBookRecord(int bookId, int profileId, bool isSubscribed)
         {
             return await _BookieDBContext.ProfileBooks
            .FirstOrDefaultAsync(x => x.BookId == bookId && x.ProfileId == profileId && x.WasUnsubscribed == isSubscribed);
@@ -176,7 +163,7 @@ namespace Bakalauras.data.repositories
 
         public async Task UpdateProfileBookRecord(ProfileBook pb)
         {
-             _BookieDBContext.ProfileBooks.Update(pb);
+            _BookieDBContext.ProfileBooks.Update(pb);
             await _BookieDBContext.SaveChangesAsync();
         }
 
@@ -194,14 +181,14 @@ namespace Bakalauras.data.repositories
                 return string.Empty;
             }
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new ();
             foreach (int id in data)
             {
                 sb.Append(id);
-                sb.Append(",");
+                sb.Append(',');
             }
 
-            sb.Length--; 
+            sb.Length--;
             return sb.ToString();
         }
 
@@ -217,8 +204,8 @@ namespace Bakalauras.data.repositories
 
         public bool WasBookSubscribed(ProfileBook prbo)
         {
-            var pb = _BookieDBContext.ProfileBooks.Where(x => x.WasUnsubscribed == false && x.BookId==prbo.BookId).FirstOrDefault();
-            return (pb !=null) ? true : false;
+            var pb = _BookieDBContext.ProfileBooks.Where(x => !x.WasUnsubscribed && x.BookId == prbo.BookId).FirstOrDefault();
+            return (pb != null);
         }
 
         public bool HasEnoughPoints(double userPoints, double costpoints)
@@ -233,7 +220,7 @@ namespace Bakalauras.data.repositories
 
         public async Task PayForPoints(Profile userWallet, Payment payment)
         {
-            PaymentUser pu = new PaymentUser { PaymentId = payment.Id, ProfileId = userWallet.Id, Date = DateTime.Now };
+            PaymentUser pu = new() { PaymentId = payment.Id, ProfileId = userWallet.Id, Date = DateTime.Now };
             Profile SystemWallet = await GetAsync(_SystemWalletId);
             SystemWallet.Points += payment.Price;
             userWallet.Points += payment.Points;
@@ -245,9 +232,9 @@ namespace Bakalauras.data.repositories
         }
 
         //returns only the chapters that were bought previously
-        public async Task<List<BookDtoBought>> GetBookList(List<ProfileBook> prbo)
+        public List<BookDtoBought> GetBookList(List<ProfileBook> prbo)
         {
-            var removeunsUnsubcribed = prbo.Where(x => x.WasUnsubscribed == false).ToList();
+            var removeunsUnsubcribed = prbo.Where(x => !x.WasUnsubscribed).ToList();
             var bookIds = removeunsUnsubcribed.Select(pb => pb.BookId).ToList();
             var boughtChaptersMap = new Dictionary<int, List<int>>();
 
@@ -260,14 +247,10 @@ namespace Bakalauras.data.repositories
             var books = _BookieDBContext.Books.Include(b => b.Chapters)
                                   .Where(x => bookIds.Contains(x.Id))
                                   .ToList();
-
-            var boughtBooks = new List<BookDtoBought>();
-            foreach (var book in books)
-            {
-                if (boughtChaptersMap.ContainsKey(book.Id))
-                {
-                    var boughtChapters = book.Chapters.Where(c => boughtChaptersMap[book.Id].Contains(c.Id)).ToList();
-                    var temp = new BookDtoBought(
+            return (from book in books
+                    where boughtChaptersMap.ContainsKey(book.Id)
+                    let boughtChapters = book.Chapters.Where(c => boughtChaptersMap[book.Id].Contains(c.Id)).ToList()
+                    let temp = new BookDtoBought(
                     book.Id,
                     book.Name,
                     boughtChapters,
@@ -282,11 +265,8 @@ namespace Bakalauras.data.repositories
                     book.IsFinished,
                     book.Status,
                     book.StatusComment
-                    );
-                    boughtBooks.Add(temp);
-                }
-            }
-            return boughtBooks;        
+                    )
+                    select temp).ToList();
         }
 
         public async Task<List<PaymentDto>> GetAvailablePayments()
@@ -299,10 +279,10 @@ namespace Bakalauras.data.repositories
 
         public async Task<PaymentDto> CreateAvailablePayment(PaymentCreateDto dto)
         {
-            Payment temp = new Payment { Price = dto.Price, Points = dto.Points };
+            Payment temp = new() { Price = dto.Price, Points = dto.Points };
             _BookieDBContext.Payments.Add(temp);
             await _BookieDBContext.SaveChangesAsync();
-            PaymentDto pay = new PaymentDto(temp.Id, temp.Points, temp.Price);
+            PaymentDto pay = new (temp.Id, temp.Points, temp.Price);
             return pay;
         }
 

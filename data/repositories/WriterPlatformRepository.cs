@@ -1,6 +1,5 @@
 ﻿using Bakalauras.Auth.Model;
 using Bakalauras.data.dtos;
-using Bakalauras.data.entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,38 +14,35 @@ namespace Bakalauras.data.repositories
     public class WriterPlatformRepository : IWriterPlatformRepository
     {
         //constants
-        private const double PLATFORMFEEPERCENT = 10;
-        private const double POINTVALUETOEUR = 0.2;
-        private const double MINIMALWITHDRAWALAMT = 5;
+        private const double _PLATFORMFEEPERCENT = 10;
+        private const double _POINTVALUETOEUR = 0.2;
+        private const double _MINIMALWITHDRAWALAMT = 5;
 
         private readonly BookieDBContext _BookieDBContext;
-        private readonly IBookRepository _BookRepository;
         private readonly IProfileRepository _ProfileRepository;
-        private readonly UserManager<BookieUser> _UserManager;
 
-        public WriterPlatformRepository(BookieDBContext context, UserManager<BookieUser> mng, IBookRepository bookRepository,
-            IProfileRepository profileRepository)
+        public WriterPlatformRepository(BookieDBContext context,IProfileRepository profileRepository)
         {
             _BookieDBContext = context;
-            _UserManager = mng;
-            _BookRepository = bookRepository;
             _ProfileRepository = profileRepository;
         }
         public async Task<List<BookSalesData>> GetBookData(string userId)
         {
             var profile = await _ProfileRepository.GetAsync(userId);
+            if(profile == null)
+                return new List<BookSalesData>();
             var books = await _BookieDBContext.Books.Where(x => x.UserId == userId).ToListAsync();
             var bookIds = books.Select(x => x.Id).ToList();
             var profileBooks = await _BookieDBContext.ProfileBooks.Where(pb => bookIds.Contains(pb.BookId)).ToListAsync();
-            List<BookSalesData> result = new List<BookSalesData>();
+            List<BookSalesData> result = new();
             foreach (var book in books)
             {
-                BookSalesData temp = new BookSalesData(
+                BookSalesData temp = new(
                      book.Name,
                      book.BookPrice,
                      profileBooks.Count(x => x.BookId == book.Id),
                      profileBooks.Where(x => x.BookId == book.Id).Select(y => y.BoughtDate).ToList(),
-                    profileBooks.Count(x => x.BookId == book.Id && x.WasUnsubscribed == false));
+                    profileBooks.Count(x => x.BookId == book.Id && !x.WasUnsubscribed));
                 result.Add(temp);
             }
             return result;
@@ -54,14 +50,13 @@ namespace Bakalauras.data.repositories
 
         public async Task<List<TextSalesData>> GetTextData(string userId)
         {
-            var profile = await _ProfileRepository.GetAsync(userId);
             var texts = await _BookieDBContext.Texts.Where(x => x.UserId == userId).ToListAsync();
             var textIds = texts.Select(x => x.Id).ToList();
             var profileTexts = await _BookieDBContext.ProfileTexts.Where(pb => textIds.Contains(pb.TextId)).ToListAsync();
-            List<TextSalesData> result = new List<TextSalesData>();
+            List<TextSalesData> result = new();
             foreach (var text in texts)
             {
-                TextSalesData temp = new TextSalesData(
+                TextSalesData temp = new(
                      text.Name,
                      text.Price,
                      profileTexts.Count(x => x.TextId == text.Id),
@@ -74,11 +69,13 @@ namespace Bakalauras.data.repositories
         public async Task<WriterPaymentConfirmation> ProcessWriterPayment(string userId, double withdrawalPercent)
         {
             var profile = await _ProfileRepository.GetAsync(userId);
+            if (profile == null)
+                return new WriterPaymentConfirmation(false,true,0,0);
             var pointsToWithdraw = profile.Points * withdrawalPercent;
-            double paymentAmount = (pointsToWithdraw - (pointsToWithdraw * (PLATFORMFEEPERCENT / 100))) * POINTVALUETOEUR;
+            double paymentAmount = (pointsToWithdraw - (pointsToWithdraw * (_PLATFORMFEEPERCENT / 100))) * _POINTVALUETOEUR;
             bool withrawalTooSmall = false;
 
-            if (paymentAmount < MINIMALWITHDRAWALAMT)
+            if (paymentAmount < _MINIMALWITHDRAWALAMT)
             {
                 return new WriterPaymentConfirmation(false, true, 0, paymentAmount);
             }
@@ -91,8 +88,7 @@ namespace Bakalauras.data.repositories
                 profile.Points -= pointsToWithdraw;
                 await _ProfileRepository.UpdateAsync(profile);
             }
-            WriterPaymentConfirmation result = new WriterPaymentConfirmation(bankResponse, withrawalTooSmall,
-                                                                             pointsToWithdraw, paymentAmount);
+            WriterPaymentConfirmation result = new(bankResponse, withrawalTooSmall, pointsToWithdraw, paymentAmount);
             return result;
         }
     }

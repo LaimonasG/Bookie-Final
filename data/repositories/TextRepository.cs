@@ -1,17 +1,12 @@
-﻿using Bakalauras.data.entities;
-using iText.Kernel.Pdf.Canvas.Parser;
-using iText.Kernel.Pdf;
-using System.Text.RegularExpressions;
-using System.Text;
+﻿using Bakalauras.data.dtos;
+using Bakalauras.data.entities;
 using Microsoft.EntityFrameworkCore;
-using System.Net;
-using Bakalauras.data.dtos;
 
 namespace Bakalauras.data.repositories
 {
     public interface ITextRepository
     {
-        Task CreateAsync(Text Text,string genreName);
+        Task CreateAsync(Text Text, string genreName);
         Task<Text?> GetAsync(int TextId);
         Task<IReadOnlyList<Text>> GetManyAsync(string genreName);
         Task UpdateAsync(Text Text);
@@ -22,13 +17,13 @@ namespace Bakalauras.data.repositories
 
         Task<List<Text>> GetUserTextsAsync(string userId);
 
-        Task<List<TextDtoBought>> ConvertTextsTotextDtoBoughtList(List<Text> texts);
+        List<TextDtoBought> ConvertTextsTotextDtoBoughtList(List<Text> texts);
         Task DeleteAsync(Text text);
 
         Task<List<TextDtoBought>> GetTextList(List<ProfileText> prbo);
         Task<List<TextDtoBought>> GetSubmittedTextList();
 
-        Task<bool> SetTextStatus(int status, int textId,string statusComment);
+        Task<bool> SetTextStatus(int status, int textId, string statusComment);
 
     }
 
@@ -42,11 +37,11 @@ namespace Bakalauras.data.repositories
             _ProfileRepository = profileRepository;
         }
 
-        public async Task CreateAsync(Text text, string genreName)
+        public async Task CreateAsync(Text Text, string genreName)
         {
             var genre = _BookieDBContext.Genres.FirstOrDefault(x => x.Name == genreName);
-            if (genre != null) text.GenreName = genreName;
-            _BookieDBContext.Texts.Add(text);
+            if (genre != null) Text.GenreName = genreName;
+            _BookieDBContext.Texts.Add(Text);
             await _BookieDBContext.SaveChangesAsync();
         }
 
@@ -57,7 +52,7 @@ namespace Bakalauras.data.repositories
 
         public async Task<IReadOnlyList<Text>> GetManyAsync(string genreName)
         {
-            return await _BookieDBContext.Texts.Where(x => x.GenreName == genreName && x.Status==Status.Patvirtinta).ToListAsync();
+            return await _BookieDBContext.Texts.Where(x => x.GenreName == genreName && x.Status == Status.Patvirtinta).ToListAsync();
         }
 
         public async Task DeleteAsync(Text text)
@@ -87,7 +82,7 @@ namespace Bakalauras.data.repositories
 
         public async Task<bool> WasTextBought(Text text)
         {
-            var found= await _BookieDBContext.ProfileTexts.FirstOrDefaultAsync(x => x.TextId==text.Id);
+            var found = await _BookieDBContext.ProfileTexts.FirstOrDefaultAsync(x => x.TextId == text.Id);
             if (found != null) return true;
             return false;
         }
@@ -106,24 +101,24 @@ namespace Bakalauras.data.repositories
             return await _BookieDBContext.Texts.Where(x => x.UserId == userId).ToListAsync();
         }
 
-        public async Task<List<TextDtoBought>> ConvertTextsTotextDtoBoughtList(List<Text> texts)
+        public List<TextDtoBought> ConvertTextsTotextDtoBoughtList(List<Text> texts)
         {
             var textDtoBoughtList = new List<TextDtoBought>();
             foreach (var text in texts)
             {
                 var textDtoBought = new TextDtoBought(
                     Id: text.Id,
-                    Name: text.Name,           
+                    Name: text.Name,
                     GenreName: text.GenreName,
                     Content: text.Content,
                     Description: text.Description,
                     Price: text.Price,
-                    CoverImageUrl:text.CoverImageUrl,
-                    Author:text.Author,
+                    CoverImageUrl: text.CoverImageUrl,
+                    Author: text.Author,
                     Created: text.Created,
                     UserId: text.UserId,
-                    status:text.Status,
-                    statusMessage:text.StatusComment
+                    status: text.Status,
+                    statusMessage: text.StatusComment
                 );
                 textDtoBoughtList.Add(textDtoBought);
             }
@@ -151,8 +146,8 @@ namespace Bakalauras.data.repositories
                         Created: text.Created,
                         UserId: text.UserId,
                         Author: text.Author,
-                        status:text.Status,
-                        statusMessage:text.StatusComment
+                        status: text.Status,
+                        statusMessage: text.StatusComment
                     );
 
                     boughtTexts.Add(textDtoBought);
@@ -168,29 +163,29 @@ namespace Bakalauras.data.repositories
             var textDtos = new List<TextDtoBought>();
             foreach (var text in texts)
             {
-                    var textDtoBought = new TextDtoBought
-                    (
-                        Id: text.Id,
-                        Name: text.Name,
-                        GenreName: text.GenreName,
-                        Content: text.Content,
-                        Description: text.Description,
-                        Price: text.Price,
-                        CoverImageUrl: text.CoverImageUrl,
-                        Created: text.Created,
-                        UserId: text.UserId,
-                        Author: text.Author,
-                        status:text.Status,
-                        statusMessage:""
-                    );
+                var textDtoBought = new TextDtoBought
+                (
+                    Id: text.Id,
+                    Name: text.Name,
+                    GenreName: text.GenreName,
+                    Content: text.Content,
+                    Description: text.Description,
+                    Price: text.Price,
+                    CoverImageUrl: text.CoverImageUrl,
+                    Created: text.Created,
+                    UserId: text.UserId,
+                    Author: text.Author,
+                    status: text.Status,
+                    statusMessage: ""
+                );
 
-                textDtos.Add(textDtoBought);              
+                textDtos.Add(textDtoBought);
             }
             return textDtos;
 
         }
 
-        public async Task<bool> SetTextStatus(int status, int textId,string statusComment)
+        public async Task<bool> SetTextStatus(int status, int textId, string statusComment)
         {
             var text = await GetAsync(textId);
             if (text == null)
@@ -198,11 +193,11 @@ namespace Bakalauras.data.repositories
                 return false;
             }
 
-                Status textStatus = (Status)status;
-                text.Status = textStatus;
-                text.StatusComment = statusComment;
-                await UpdateAsync(text);
-                return true;
+            Status textStatus = (Status)status;
+            text.Status = textStatus;
+            text.StatusComment = statusComment;
+            await UpdateAsync(text);
+            return true;
         }
 
     }

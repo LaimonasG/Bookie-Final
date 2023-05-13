@@ -2,28 +2,11 @@
 using Bakalauras.data.entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
-using System.Configuration;
 
 namespace Bakalauras.data
 {
     public class BookieDBContext : IdentityDbContext<BookieUser>
     {
-        //private readonly IConfiguration _configuration;
-
-        //public BookieDBContext(IConfiguration configuration, DbContextOptions<BookieDBContext> options)
-        //    : base(options)
-        //{
-        //    _configuration = configuration;
-        //}
-        public BookieDBContext()
-        {
-
-        }
-        public BookieDBContext(DbContextOptions<BookieDBContext> options) : base(options)
-        {
-        }
-
         public DbSet<Book> Books { get; set; }
         public DbSet<Comment> Comments { get; set; }
 
@@ -89,18 +72,10 @@ namespace Bakalauras.data
             modelBuilder.Entity<ProfileText>()
                 .HasKey(x => new { x.TextId, x.ProfileId });
 
-            //modelBuilder.Entity<ProfileText>()
-            //    .HasOne(p => p.Text)
-            //    .WithMany(pu => pu.ProfileTexts)
-            //    .HasForeignKey(p => p.TextId);
-
             modelBuilder.Entity<ProfileText>()
                 .HasOne(u => u.Profile)
                 .WithMany(pu => pu.ProfileTexts)
                 .HasForeignKey(u => u.ProfileId);
-
-      //      modelBuilder.Entity<ProfileBook>()
-      //.HasKey(pb => new { pb.ProfileId, pb.BookId });
 
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -109,7 +84,6 @@ namespace Bakalauras.data
             {
                 optionsBuilder.UseSqlServer("Data Source=(localdb)\\MSSQLLocalDB; Initial Catalog=BookieDB");
             }
-            //  optionsBuilder.UseSqlServer("Server=tcp:bookie.database.windows.net,1433;Initial Catalog=Bookie_db;Persist Security Info=False;User ID=namas;Password=AdminBasket18+;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
         }
     }
 

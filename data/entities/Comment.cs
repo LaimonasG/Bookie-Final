@@ -1,11 +1,10 @@
 ﻿using Bakalauras.Auth;
 using Bakalauras.Auth.Model;
-using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace Bakalauras.data.entities
 {
-    public class Comment: IUserOwnedResource
+    public class Comment : IUserOwnedResource
     {
         public int Id { get; set; }
 
@@ -20,7 +19,7 @@ namespace Bakalauras.data.entities
         [Required]
         public string UserId { get; set; }
         public string Username { get; set; }
-         public BookieUser User { get; set; }
+        public BookieUser User { get; set; }
 
     }
 }

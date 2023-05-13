@@ -1,10 +1,6 @@
-﻿using Bakalauras.Auth.Model;
-using Bakalauras.data.dtos;
+﻿using Bakalauras.data.dtos;
 using Bakalauras.data.entities;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Net;
-using System.Text;
 
 namespace Bakalauras.data.repositories
 {
@@ -20,7 +16,7 @@ namespace Bakalauras.data.repositories
         Task UpdateAsync(DailyQuestion question);
         Task<(bool, object)> AnswerQuestion(int questionId, int answerId, string userId);
         Task<Answer> GetCorrectAsnwer(DailyQuestion question);
-        List<Answer> UpdateAnswers(List<Answer> answers, int questionId);
+        List<Answer> AddQuestionIdToAnswers(List<Answer> answers, int questionId);
         Task<(bool, DateTime)> WhenWasQuestionAnswered(string userId);
 
         Task<bool> DeleteQuestionAsync(int questionId);
@@ -29,17 +25,17 @@ namespace Bakalauras.data.repositories
     {
         private readonly BookieDBContext _BookieDBContext;
         private readonly IProfileRepository _ProfileRepository;
-        public DailyQuestionRepository(BookieDBContext context,IProfileRepository repp)
+        public DailyQuestionRepository(BookieDBContext context, IProfileRepository repp)
         {
             _BookieDBContext = context;
             _ProfileRepository = repp;
         }
 
-        public async Task<GetQuestionDto?> GetQuestionAsync(string DateString)
+        public async Task<GetQuestionDto?> GetQuestionAsync(string date)
         {
             var questions = await GetManyAsync();
-            DateTime date = DateTime.Parse(DateString);
-            DailyQuestion rez = questions.Where(x => x.Date.Year == date.Year && x.Date.Month == date.Month && x.Date.Day == date.Day).FirstOrDefault();
+            DateTime usableDate = DateTime.Parse(date);
+            DailyQuestion rez = questions.FirstOrDefault(x => x.Date.Year == usableDate.Year && x.Date.Month == usableDate.Month && x.Date.Day == usableDate.Day);
             if (rez == null) { return null; }
             GetQuestionDto result = new GetQuestionDto
             (
@@ -48,11 +44,11 @@ namespace Bakalauras.data.repositories
                 rez.Points,
                 rez.Date,
                 new List<Answer>()
-            ) ;
+            );
             var answers = await _BookieDBContext.Answers.Where(x => x.QuestionId == rez.Id).ToListAsync();
             result.Answers.AddRange(answers);
 
-            
+
             return result;
         }
 
@@ -87,7 +83,7 @@ namespace Bakalauras.data.repositories
 
         public async Task<DailyQuestion?> GetAsync(int id)
         {
-            return  await _BookieDBContext.DailyQuestions.FirstOrDefaultAsync(x => x.Id == id);
+            return await _BookieDBContext.DailyQuestions.FirstOrDefaultAsync(x => x.Id == id);
         }
 
         public async Task<IReadOnlyList<DailyQuestion>> GetManyAsync()
@@ -157,18 +153,18 @@ namespace Bakalauras.data.repositories
             _BookieDBContext.Profiles.Update(userProfile);
 
             await _BookieDBContext.SaveChangesAsync();
-            
+
             return (true, result);
         }
 
         public async Task<Answer> GetCorrectAsnwer(DailyQuestion question)
         {
-            return await _BookieDBContext.Answers.FirstOrDefaultAsync(x => x.QuestionId == question.Id && x.Correct==1);
+            return await _BookieDBContext.Answers.FirstOrDefaultAsync(x => x.QuestionId == question.Id && x.Correct == 1);
         }
 
-        public List<Answer> UpdateAnswers(List<Answer> answers, int questionId)
+        public List<Answer> AddQuestionIdToAnswers(List<Answer> answers, int questionId)
         {
-            List<Answer> rez=new List<Answer>();
+            List<Answer> rez = new List<Answer>();
             foreach (var ans in answers)
             {
                 rez.Add(new Answer
@@ -183,7 +179,7 @@ namespace Bakalauras.data.repositories
 
         public async Task<(bool, DateTime)> WhenWasQuestionAnswered(string userId)
         {
-            Profile profile=await _ProfileRepository.GetAsync(userId);
+            Profile profile = await _ProfileRepository.GetAsync(userId);
             var dqp = await _BookieDBContext.DailyQuestionProfiles
                       .OrderByDescending(x => x.DateAnswered)
                       .FirstOrDefaultAsync(x => x.ProfileId == profile.Id);
@@ -205,7 +201,7 @@ namespace Bakalauras.data.repositories
                 return true;
             }
             else return false;
-            
+
         }
 
     }

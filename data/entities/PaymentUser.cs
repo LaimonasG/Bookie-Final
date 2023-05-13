@@ -1,7 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace Bakalauras.data.entities
+﻿namespace Bakalauras.data.entities
 {
     public class PaymentUser
     {

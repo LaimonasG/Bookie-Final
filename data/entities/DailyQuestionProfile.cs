@@ -1,7 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.ComponentModel.DataAnnotations;
-
-namespace Bakalauras.data.entities
+﻿namespace Bakalauras.data.entities
 {
     public class DailyQuestionProfile
     {

@@ -1,31 +1,19 @@
-﻿using Bakalauras.data.entities;
-using Bakalauras.data;
-using Microsoft.AspNetCore.Mvc;
-using System.Web;
-using System.Net.Http.Headers;
-using Bakalauras.data.dtos;
-using Bakalauras.data;
-using static Bakalauras.data.dtos.ChaptersDto;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authorization;
+﻿using Bakalauras.Auth;
 using Bakalauras.Auth.Model;
-using static Bakalauras.data.repositories.ChaptersRepository;
+using Bakalauras.data.entities;
 using Bakalauras.data.repositories;
-using System.ComponentModel.Design;
-using System.Text;
-using iText.Kernel.Pdf;
-using iText.Kernel.Pdf.Canvas.Parser;
-using System.Text.RegularExpressions;
-using Bakalauras.Migrations;
-using Bakalauras.Auth;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using static Bakalauras.data.dtos.ChaptersDto;
 
 namespace Bakalauras.Controllers
 {
     [ApiController]
     [Route("api/genres/{genreName}/books/{bookId}/chapters")]
-    public class ChaptersController:ControllerBase
+    public class ChaptersController : ControllerBase
     {
         private readonly IChaptersRepository _ChapterRepository;
         private readonly UserManager<BookieUser> _UserManager;
@@ -63,13 +51,13 @@ namespace Bakalauras.Controllers
                 return BadRequest("Failo simbolių kiekis viršytas.");
             }
 
-            Chapter chapter = new Chapter { Name = dto.Name, BookId = bookId, Content = content, UserId=UserId };
-            int chapterId=await _ChapterRepository.CreateAsync(chapter, int.Parse(dto.IsFinished));
+            Chapter chapter = new Chapter { Name = dto.Name, BookId = bookId, Content = content, UserId = UserId };
+            int chapterId = await _ChapterRepository.CreateAsync(chapter, int.Parse(dto.IsFinished));
 
             //charge subscribed users
-            int chargedUserCount=await _BookRepository.ChargeSubscribersAndUpdateAuthor(bookId, chapterId);
+            int chargedUserCount = await _BookRepository.ChargeSubscribersAndUpdateAuthor(bookId, chapterId);
 
-            return new CreatedChapterDto(chapter.Name,chapter.Content,chapter.BookId,chargedUserCount);
+            return new CreatedChapterDto(chapter.Name, chapter.Content, chapter.BookId, chargedUserCount);
         }
 
         [HttpGet]
@@ -77,7 +65,7 @@ namespace Bakalauras.Controllers
         [Authorize(Roles = BookieRoles.BookieWriter + "," + BookieRoles.Admin)]
         public async Task<ActionResult<GetChapterDto>> GetOneChapter(int bookId, int chapterId)
         {
-            var chapter = await _ChapterRepository.GetAsync(bookId, chapterId);
+            var chapter = await _ChapterRepository.GetAsync(chapterId,bookId );
 
             var authRez = await _AuthorizationService.AuthorizeAsync(User, chapter, PolicyNames.ResourceOwner);
 
@@ -86,7 +74,7 @@ namespace Bakalauras.Controllers
                 return Forbid();
             }
             if (chapter == null) return NotFound();
-            return new GetChapterDto(chapter.Id,chapter.BookId, chapter.UserId, chapter.Name,chapter.Content);
+            return new GetChapterDto(chapter.Id, chapter.BookId, chapter.UserId, chapter.Name, chapter.Content);
         }
 
         [HttpGet]
@@ -102,7 +90,7 @@ namespace Bakalauras.Controllers
 
             var chapters = await _ChapterRepository.GetManyAsync(bookId);
 
-            return Ok(chapters.Select(x => 
+            return Ok(chapters.Select(x =>
             new GetChapterDto(x.Id, x.BookId, x.UserId, x.Name, x.Content))
                 .Where(y => y.BookId == bookId));
         }
@@ -132,7 +120,7 @@ namespace Bakalauras.Controllers
                 return Forbid();
             }
 
-            if(chapterName!=null) { chapter.Name = chapterName; }
+            if (chapterName != null) { chapter.Name = chapterName; }
             if (file != null) { chapter.Content = _ChapterRepository.ExtractTextFromPDf(file); }
 
             await _ChapterRepository.UpdateAsync(chapter);

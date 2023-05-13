@@ -16,7 +16,7 @@ namespace Bakalauras.data.entities
         public ICollection<DailyQuestionProfile>? DailyQuestionProfiles { get; set; }
         public ICollection<PaymentUser>? PaymentUser { get; set; }
         [Required]
-        public string UserId { get; set; } 
+        public string UserId { get; set; }
         public BookieUser User { get; set; }
     }
 }
