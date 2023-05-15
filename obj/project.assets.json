@@ -2508,6 +2508,29 @@
           }
         }
       },
+      "pdfboxNet/1.8.9": {
+        "type": "package",
+        "compile": {
+          "lib/IKVM.OpenJDK.Core.dll": {},
+          "lib/IKVM.OpenJDK.SwingAWT.dll": {},
+          "lib/IKVM.OpenJDK.Text.dll": {},
+          "lib/IKVM.OpenJDK.Util.dll": {},
+          "lib/IKVM.Runtime.dll": {},
+          "lib/commons-logging.dll": {},
+          "lib/fontbox-1.8.9.dll": {},
+          "lib/pdfbox-1.8.9.dll": {}
+        },
+        "runtime": {
+          "lib/IKVM.OpenJDK.Core.dll": {},
+          "lib/IKVM.OpenJDK.SwingAWT.dll": {},
+          "lib/IKVM.OpenJDK.Text.dll": {},
+          "lib/IKVM.OpenJDK.Util.dll": {},
+          "lib/IKVM.Runtime.dll": {},
+          "lib/commons-logging.dll": {},
+          "lib/fontbox-1.8.9.dll": {},
+          "lib/pdfbox-1.8.9.dll": {}
+        }
+      },
       "Portable.BouncyCastle/1.8.9": {
         "type": "package",
         "compile": {
@@ -7689,6 +7712,25 @@
         "pagedlist.nuspec"
       ]
     },
+    "pdfboxNet/1.8.9": {
+      "sha512": "qdDMI7AYZESIYTLweBabLEYsUrtqjUWYeax2cbgsELdHtQoFSeSz++JMUn3+F2uACp76gdNiHn7om/EZr9rtqg==",
+      "type": "package",
+      "path": "pdfboxnet/1.8.9",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/IKVM.OpenJDK.Core.dll",
+        "lib/IKVM.OpenJDK.SwingAWT.dll",
+        "lib/IKVM.OpenJDK.Text.dll",
+        "lib/IKVM.OpenJDK.Util.dll",
+        "lib/IKVM.Runtime.dll",
+        "lib/commons-logging.dll",
+        "lib/fontbox-1.8.9.dll",
+        "lib/pdfbox-1.8.9.dll",
+        "pdfboxnet.1.8.9.nupkg.sha512",
+        "pdfboxnet.nuspec"
+      ]
+    },
     "Portable.BouncyCastle/1.8.9": {
       "sha512": "wlJo8aFoeyl+W93iFXTK5ShzDYk5WBqoUPjTNEM0Xv9kn1H+4hmuCjF0/n8HLm9Nnp1aY6KNndWqQTNk+NGgRQ==",
       "type": "package",
@@ -12196,7 +12238,8 @@
       "PagedList >= 1.17.0",
       "SonarAnalyzer.CSharp >= 9.0.0.68202",
       "Swashbuckle.AspNetCore >= 6.4.0",
-      "itext7 >= 7.2.5"
+      "itext7 >= 7.2.5",
+      "pdfboxNet >= 1.8.9"
     ]
   },
   "packageFolders": {
@@ -12300,6 +12343,10 @@
           "itext7": {
             "target": "Package",
             "version": "[7.2.5, )"
+          },
+          "pdfboxNet": {
+            "target": "Package",
+            "version": "[1.8.9, )"
           }
         },
         "imports": [
@@ -12332,6 +12379,16 @@
       "warningLevel": 1,
       "message": "Package 'PagedList 1.17.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net6.0'. This package may not be fully compatible with your project.",
       "libraryId": "PagedList",
+      "targetGraphs": [
+        "net6.0"
+      ]
+    },
+    {
+      "code": "NU1701",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'pdfboxNet 1.8.9' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net6.0'. This package may not be fully compatible with your project.",
+      "libraryId": "pdfboxNet",
       "targetGraphs": [
         "net6.0"
       ]

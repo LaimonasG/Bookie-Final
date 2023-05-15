@@ -36,20 +36,24 @@ namespace Bakalauras.Controllers
         }
         [HttpGet]
         [Route("finished")]
-        public async Task<IEnumerable<BookDtoToBuy>> GetManyFinished(string GenreName)
+        public async Task<ActionResult<IEnumerable<BookDtoToBuy>>> GetManyFinished(string GenreName)
         {
             string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            if (userId == null)
+                return BadRequest();
             var books = await _BookRepository.GetManyAsync(GenreName, 1, userId);
-            return books;
+            return Ok(books);
         }
 
         [HttpGet]
         [Route("unfinished")]
-        public async Task<IEnumerable<BookDtoToBuy>> GetManyUnFinished(string GenreName)
+        public async Task<ActionResult<IEnumerable<BookDtoToBuy>>> GetManyUnFinished(string GenreName)
         {
             string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            if (userId == null)
+                return BadRequest();
             var books = await _BookRepository.GetManyAsync(GenreName, 0, userId);
-            return books;
+            return Ok(books);
         }
 
         [HttpGet]
@@ -237,11 +241,17 @@ namespace Bakalauras.Controllers
                 await _ProfileRepository.CreateProfileBookRecord(subscription);
             }
 
-            await _ProfileRepository.UpdateAsync(profile);
-            await _ProfileRepository.UpdateAsync(authorProfile);
+            if (bookPeriodPoints != 0)
+            {
+                await _ProfileRepository.UpdateAsync(profile);
+                await _ProfileRepository.UpdateAsync(authorProfile);
+            }
+
 
             return Ok();
         }
+
+
 
         [HttpPut]
         [Route("{bookId}/unsubscribe")]

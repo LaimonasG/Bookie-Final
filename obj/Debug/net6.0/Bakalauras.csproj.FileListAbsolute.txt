@@ -584,3 +584,11 @@ D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\AngleSharp.dll
 D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\AngleSharp.Css.dll
 D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\HtmlSanitizer.dll
 D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\System.Collections.Immutable.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\IKVM.OpenJDK.Core.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\IKVM.OpenJDK.SwingAWT.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\IKVM.OpenJDK.Text.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\IKVM.OpenJDK.Util.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\IKVM.Runtime.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\commons-logging.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\fontbox-1.8.9.dll
+D:\laimi\Bakalauras\BookieAPI\bin\Debug\net6.0\pdfbox-1.8.9.dll

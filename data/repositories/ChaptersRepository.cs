@@ -2,6 +2,7 @@
 using Ganss.Xss;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
+using iText.Kernel.Pdf.Canvas.Parser.Listener;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 
@@ -114,9 +115,11 @@ namespace Bakalauras.data.repositories
             {
                 using (var document = new PdfDocument(reader))
                 {
+                    var strategy = new SimpleTextExtractionStrategy();
+
                     for (int i = 1; i < document.GetNumberOfPages() + 1; i++)
                     {
-                        var text = PdfTextExtractor.GetTextFromPage(document.GetPage(i));
+                        var text = PdfTextExtractor.GetTextFromPage(document.GetPage(i), strategy);
                         fileContent.Append(text);
                     }
                 }

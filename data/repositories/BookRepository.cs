@@ -30,6 +30,7 @@ namespace Bakalauras.data.repositories
         (string bucketName, string objectKey) ParseS3Url(string imageUrl);
         Task<bool> DeleteImageFromS3Async(string imageUrl, string accessKey, string secretKey);
         Task<string> UploadImageToS3Async(Stream imageStream, string bucketName, string objectKey, string accessKey, string secretKey);
+       Task<string> HandleSubscribe(int bookId, string userId, IProfileRepository _ProfileRepository, IChaptersRepository _ChaptersRepository, UserManager<BookieUser> _UserManager);
     }
 
     public class BookRepository : IBookRepository
@@ -109,7 +110,7 @@ namespace Bakalauras.data.repositories
             return await _BookieDBContext.Books.Where(x => x.UserId == userId).ToListAsync();
         }
 
-        public async Task<IReadOnlyList<SubscribeToBookDto>> GetUserSubscribedBooksAsync(Profile profile)
+        public Task<IReadOnlyList<SubscribeToBookDto>> GetUserSubscribedBooksAsync(Profile profile)
         {
             var bookIds = _BookieDBContext.ProfileBooks
                          .Where(pb => pb.ProfileId == profile.Id)
@@ -366,5 +367,86 @@ namespace Bakalauras.data.repositories
 
             return true;
         }
+
+        public async Task<string> HandleSubscribe(int bookId, string userId, IProfileRepository _ProfileRepository, IChaptersRepository _ChaptersRepository, UserManager<BookieUser> _UserManager)
+        {
+            var book = await GetAsync(bookId);
+            if (book.Status == Status.Pateikta) return "Knyga dar nebuvo patvirtinta";
+            if (book.Status == Status.Atmesta)
+            {
+                return book.StatusComment != null ? string.Format("Knyga buvo atmesta, priežastis: {0}", book.StatusComment) : "Knyga buvo atmesta.";
+            }
+
+            var user = await _UserManager.FindByIdAsync(userId);
+            var profile = await _ProfileRepository.GetAsync(user.Id);
+            var authorProfile = await _ProfileRepository.GetAsync((
+                                await _UserManager.FindByIdAsync((
+                                await GetAsync(bookId)).UserId)).Id);
+
+            ProfileBook prbo = new ProfileBook { BookId = bookId, ProfileId = profile.Id, BoughtChapterList = "" };
+
+            if (book.UserId == profile.UserId)
+            {
+                return "Jūs esate knygos autorius.";
+            }
+            else if (_ProfileRepository.WasBookSubscribed(prbo))
+            {
+                return "Knyga jau prenumeruojama.";
+            }
+
+            var chapters = await _ChaptersRepository.GetManyAsync(bookId);
+            book.Chapters = chapters;
+            ProfileBook subscription = await _ProfileRepository.GetProfileBookRecord(bookId, profile.Id, true);
+            bool hasOldSub = false;
+            var bookPeriodPoints = 0.0;
+            if (subscription != null)
+            {
+                if (subscription.BoughtChapterList != null)
+                {
+                    List<int> chapterIds = new List<int>();
+                    var boughtChapters = _ProfileRepository.ConvertStringToIds(subscription.BoughtChapterList);
+                    HandleBookWasSubscribed(ref chapterIds, boughtChapters, chapters);
+                    boughtChapters.AddRange(chapterIds);
+                    subscription.BoughtChapterList = _ProfileRepository.ConvertIdsToString(boughtChapters);
+                    bookPeriodPoints = book.ChapterPrice * chapterIds.Count;
+                    hasOldSub = true;
+                }
+            }
+            else
+            {
+                subscription = new ProfileBook { BookId = bookId, ProfileId = profile.Id, BoughtChapterList = "" };
+                List<int> chapterIds = chapters.Select(x => x.Id).ToList();
+                subscription.BoughtChapterList = _ProfileRepository.ConvertIdsToString(chapterIds);
+                bookPeriodPoints = book.ChapterPrice * chapterIds.Count;
+            }
+
+            if (!_ProfileRepository.HasEnoughPoints(profile.Points, bookPeriodPoints))
+            {
+                return "Pirkiniui nepakanka taškų.";
+            }
+
+            profile.Points -= bookPeriodPoints;
+            authorProfile.Points += bookPeriodPoints;
+
+            subscription.WasUnsubscribed = false;
+
+            if (hasOldSub)
+            {
+                await _ProfileRepository.UpdateProfileBookRecord(subscription);
+            }
+            else
+            {
+                await _ProfileRepository.CreateProfileBookRecord(subscription);
+            }
+
+            if (bookPeriodPoints != 0)
+            {
+                await _ProfileRepository.UpdateAsync(profile);
+                await _ProfileRepository.UpdateAsync(authorProfile);
+            }
+
+            return "Success";
+        }
+
     }
 }
