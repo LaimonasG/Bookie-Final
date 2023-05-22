@@ -54,6 +54,11 @@ namespace Bakalauras.Controllers
                 return BadRequest("Komentavimas uždraustas, naudotojas užblokuotas");
             }
 
+            if (createCommentDto.Content==null && createCommentDto.Content == "")
+            {
+                return BadRequest("Komentaro tekstas negali būti tuščias.");
+            }
+
             var comment = new Comment
             {
                 EntityType = _Type,

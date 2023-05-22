@@ -18,7 +18,6 @@ namespace Bakalauras.data.entities
 
         public double Price { get; set; }
 
-        [Column(TypeName = "text")]
         public string Content { get; set; }
         public string Description { get; set; }
         public string Author { get; set; }

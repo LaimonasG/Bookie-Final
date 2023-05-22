@@ -170,6 +170,10 @@ namespace Bakalauras.Controllers
             }
 
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
+            if (user == null)
+            {
+                return BadRequest("Norint pirkti tekstą, turite prisijungti.");
+            }
             var profile = await _ProfileRepository.GetAsync(user.Id);
             var authorProfile = await _ProfileRepository.GetAsync((
                                 await _UserManager.FindByIdAsync((
@@ -177,11 +181,12 @@ namespace Bakalauras.Controllers
 
             ProfileText prte = new ProfileText { TextId = textId, ProfileId = profile.Id };
 
+          
             if (text.UserId == profile.UserId)
             {
                 return BadRequest("Jūs esate teksto autorius.");
             }
-            else if (await _Textrepostory.WasTextBought(text))
+            else if (await _Textrepostory.WasTextBought(text, profile.Id))
             {
                 return BadRequest("Naudotojas jau nusipirkęs šį tekstą.");
             }

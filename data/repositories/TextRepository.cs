@@ -12,7 +12,7 @@ namespace Bakalauras.data.repositories
         Task UpdateAsync(Text Text);
         Task<List<ProfileText>> GetProfileTexts(Profile profile);
         Task CreateProfileTextAsync(ProfileText pb);
-        Task<bool> WasTextBought(Text text);
+        Task<bool> WasTextBought(Text text,int profileId);
         Task<bool> CheckIfUserHasText(string userId, int textId);
 
         Task<List<Text>> GetUserTextsAsync(string userId);
@@ -80,9 +80,9 @@ namespace Bakalauras.data.repositories
             await _BookieDBContext.SaveChangesAsync();
         }
 
-        public async Task<bool> WasTextBought(Text text)
+        public async Task<bool> WasTextBought(Text text,int profileId)
         {
-            var found = await _BookieDBContext.ProfileTexts.FirstOrDefaultAsync(x => x.TextId == text.Id);
+            var found = await _BookieDBContext.ProfileTexts.FirstOrDefaultAsync(x => x.TextId == text.Id && x.ProfileId== profileId);
             if (found != null) return true;
             return false;
         }

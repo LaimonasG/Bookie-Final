@@ -16,7 +16,6 @@ namespace Bakalauras.data.entities
 
         public string Name { get; set; }
 
-        [Column(TypeName = "text")]
         public string Content { get; set; }
 
         public virtual ICollection<Comment>? Comments { get; set; }

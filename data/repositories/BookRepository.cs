@@ -20,7 +20,7 @@ namespace Bakalauras.data.repositories
 
         Task UpdateAsync(Book book);
         Task<List<Book>> GetUserBooksAsync(string userId);
-        Task<IReadOnlyList<SubscribeToBookDto>> GetUserSubscribedBooksAsync(Profile profile);
+        List<SubscribeToBookDto> GetUserSubscribedBooksAsync(Profile profile);
         Task<bool> CheckIfUserHasBook(BookieUser user, int bookId);
         Task<List<BookDtoBought>> ConvertBooksToBookDtoBoughtList(List<Book> books);
         Task<string> GetAuthorInfo(int bookId);
@@ -59,33 +59,34 @@ namespace Bakalauras.data.repositories
         {
             var books = await _BookieDBContext.Books.Where(x => x.Status == Status.Patvirtinta).ToListAsync();
             var bookDtos = new List<BookDtoToBuy>();
-            var profile = await _ProfileRepository.GetAsync(userId);
+            Profile profile = null;
+            if (userId != null)
+            {
+                profile = await _ProfileRepository.GetAsync(userId);
+            }
 
             foreach (var book in books)
             {
-                int chapterCount = 0;
                 var chapters = await _ChaptersRepository.GetManyAsync(book.Id);
+                var chapterCount = chapters.Count;
 
-                ProfileBook? pb = await _ProfileRepository.GetProfileBookRecord(book.Id, profile.Id, true);
-                if (pb != null)
+                if (userId != null)
                 {
-                    List<int> chapterIds = new List<int>();
-                    var boughtChapters = _ProfileRepository.ConvertStringToIds(pb.BoughtChapterList);
-                    HandleBookWasSubscribed(ref chapterIds, boughtChapters, chapters);
+                    ProfileBook? pb = await _ProfileRepository.GetProfileBookRecord(book.Id, profile.Id, true);
+                    if (pb != null)
+                    {
+                        List<int> chapterIds = new List<int>();
+                        var boughtChapters = _ProfileRepository.ConvertStringToIds(pb.BoughtChapterList);
+                        HandleBookWasSubscribed(ref chapterIds, boughtChapters, chapters);
 
-                    chapterCount = chapterIds.Count;
-                    var bookDto = new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.BookPrice,
-                    book.ChapterPrice, chapterCount, book.Created, book.UserId, book.Author, book.CoverImagePath,
-                    book.IsFinished);
-                    bookDtos.Add(bookDto);
+                        chapterCount = chapterIds.Count;
+                    }
                 }
-                else
-                {
-                    var bookDto = new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.BookPrice,
-                    book.ChapterPrice, chapters.Count, book.Created, book.UserId, book.Author, book.CoverImagePath,
-                    book.IsFinished);
-                    bookDtos.Add(bookDto);
-                }
+
+                var bookDto = new BookDtoToBuy(book.Id, book.Name, book.GenreName, book.Description, book.BookPrice,
+                        book.ChapterPrice, chapterCount, book.Created, book.UserId, book.Author, book.CoverImagePath,
+                        book.IsFinished);
+                bookDtos.Add(bookDto);
             }
             return bookDtos.Where(y => y.GenreName == genreName && y.IsFinished == isFinished).ToList();
         }
@@ -110,7 +111,7 @@ namespace Bakalauras.data.repositories
             return await _BookieDBContext.Books.Where(x => x.UserId == userId).ToListAsync();
         }
 
-        public Task<IReadOnlyList<SubscribeToBookDto>> GetUserSubscribedBooksAsync(Profile profile)
+        public List<SubscribeToBookDto> GetUserSubscribedBooksAsync(Profile profile)
         {
             var bookIds = _BookieDBContext.ProfileBooks
                          .Where(pb => pb.ProfileId == profile.Id)

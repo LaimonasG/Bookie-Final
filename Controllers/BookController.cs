@@ -39,8 +39,6 @@ namespace Bakalauras.Controllers
         public async Task<ActionResult<IEnumerable<BookDtoToBuy>>> GetManyFinished(string GenreName)
         {
             string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-            if (userId == null)
-                return BadRequest();
             var books = await _BookRepository.GetManyAsync(GenreName, 1, userId);
             return Ok(books);
         }
@@ -50,8 +48,6 @@ namespace Bakalauras.Controllers
         public async Task<ActionResult<IEnumerable<BookDtoToBuy>>> GetManyUnFinished(string GenreName)
         {
             string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-            if (userId == null)
-                return BadRequest();
             var books = await _BookRepository.GetManyAsync(GenreName, 0, userId);
             return Ok(books);
         }
