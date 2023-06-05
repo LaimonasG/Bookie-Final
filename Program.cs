@@ -65,10 +65,6 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddSingleton<IAuthorizationHandler, ResourceOwnerAuthorizationHandler>();
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-
-
-
 app.UseRouting();
 app.UseCors(MyAllowSpecificOrigins);
 app.MapControllers();

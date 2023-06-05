@@ -204,7 +204,7 @@ namespace Bakalauras.data.repositories
 
         public bool WasBookSubscribed(ProfileBook prbo)
         {
-            var pb = _BookieDBContext.ProfileBooks.Where(x => !x.WasUnsubscribed && x.BookId == prbo.BookId).FirstOrDefault();
+            var pb = _BookieDBContext.ProfileBooks.Where(x => !x.WasUnsubscribed && x.BookId == prbo.BookId && x.ProfileId==prbo.ProfileId).FirstOrDefault();
             return (pb != null);
         }
 

@@ -47,14 +47,14 @@ namespace Bakalauras.Controllers
             return Ok(result);
         }
 
-        [HttpGet]
+        [HttpPut]
         [Route("getPayment")]
         [Authorize(Roles = BookieRoles.BookieReader + "," + BookieRoles.Admin)]
-        public async Task<ActionResult<WriterPaymentConfirmation>> GetWriterPayment(double cashOutAmount)
+        public async Task<ActionResult<WriterPaymentConfirmation>> GetWriterPayment(CashOutDto dto)
         {
             var user = await _UserManager.FindByIdAsync(User.FindFirstValue(JwtRegisteredClaimNames.Sub));
 
-            var response = await _WriterPlatformRepository.ProcessWriterPayment(user.Id, cashOutAmount);
+            var response = await _WriterPlatformRepository.ProcessWriterPayment(user.Id, dto.cashOutPercent);
 
             if (response.WithrawalTooSmall)
             {
