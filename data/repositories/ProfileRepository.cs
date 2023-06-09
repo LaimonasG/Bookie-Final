@@ -158,7 +158,7 @@ namespace Bakalauras.data.repositories
         public async Task<ProfileBook> GetProfileBookRecord(int bookId, int profileId, bool isSubscribed)
         {
             return await _BookieDBContext.ProfileBooks
-           .FirstOrDefaultAsync(x => x.BookId == bookId && x.ProfileId == profileId && x.WasUnsubscribed == isSubscribed);
+           .FirstOrDefaultAsync(x => x.BookId == bookId && x.ProfileId == profileId);
         }
 
         public async Task UpdateProfileBookRecord(ProfileBook pb)

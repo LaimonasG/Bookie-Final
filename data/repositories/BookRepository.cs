@@ -313,6 +313,7 @@ namespace Bakalauras.data.repositories
                 {
                     List<Chapter> chapters = await _ChaptersRepository.GetManyAsync(bookId);
                     List<int> chapterIds = new List<int>();
+                    if (oldPB.BoughtChapterList == null) { oldPB.BoughtChapterList = ""; }
                     var BoughtChapterList = _ProfileRepository.ConvertStringToIds(oldPB.BoughtChapterList);
                     HandleBookWasSubscribed(ref chapterIds, BoughtChapterList, chapters);
                     BoughtChapterList.AddRange(chapterIds);

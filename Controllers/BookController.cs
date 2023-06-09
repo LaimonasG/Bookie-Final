@@ -242,12 +242,8 @@ namespace Bakalauras.Controllers
                 await _ProfileRepository.UpdateAsync(profile);
                 await _ProfileRepository.UpdateAsync(authorProfile);
             }
-
-
             return Ok();
         }
-
-
 
         [HttpPut]
         [Route("{bookId}/unsubscribe")]
